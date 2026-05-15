@@ -1,0 +1,237 @@
+<!--
+  ENS (Esquema Nacional de Seguridad) Detection Rules for Wazuh
+  Real Decreto 311/2022
+
+  These rules tag Wazuh alerts with the corresponding ENS control references.
+  They use <if_sid> to match existing Wazuh rule events and add ENS compliance groups.
+
+  ENS Control families covered:
+    op.acc  — Access control
+    op.exp  — Operations / exploitation
+    op.mon  — Monitoring
+    mp.com  — Communications protection
+    mp.eq   — Equipment protection
+    mp.s    — Service protection
+
+  https://github.com/fredycibersec/ENS-Wazuh-integration
+-->
+
+<group name="ens,">
+
+  <!-- ============================================================
+       op.acc.1 — Identificación
+       op.acc.6 — Mecanismo de autenticación
+       Authentication success and failure events
+       ============================================================ -->
+
+  <rule id="100200" level="5">
+    <if_sid>5501</if_sid>
+    <description>ENS op.acc.1/op.acc.6: SSH authentication failure</description>
+    <group>ENS_op.acc.1,ENS_op.acc.6,authentication_failure,</group>
+  </rule>
+
+  <rule id="100201" level="3">
+    <if_sid>5715</if_sid>
+    <description>ENS op.acc.1/op.acc.6: SSH authentication success</description>
+    <group>ENS_op.acc.1,ENS_op.acc.6,authentication_success,</group>
+  </rule>
+
+  <rule id="100202" level="10">
+    <if_sid>5712</if_sid>
+    <description>ENS op.acc.6: SSH reverse mapping failed (possible spoofing)</description>
+    <group>ENS_op.acc.6,ENS_mp.com.3,</group>
+  </rule>
+
+  <rule id="100203" level="10">
+    <if_sid>5710</if_sid>
+    <description>ENS op.acc.6: SSH insecure connection attempt</description>
+    <group>ENS_op.acc.6,</group>
+  </rule>
+
+  <!-- ============================================================
+       op.acc.2 — Requisitos de acceso
+       Password policy events
+       ============================================================ -->
+
+  <rule id="100210" level="7">
+    <if_sid>5551, 5552, 5553</if_sid>
+    <description>ENS op.acc.2: Password change or policy event</description>
+    <group>ENS_op.acc.2,account_changed,</group>
+  </rule>
+
+  <!-- ============================================================
+       op.acc.3 — Segregación de funciones
+       Sudo usage and privilege escalation events
+       ============================================================ -->
+
+  <rule id="100220" level="5">
+    <if_sid>5401</if_sid>
+    <description>ENS op.acc.3: Successful sudo privilege escalation</description>
+    <group>ENS_op.acc.3,privilege_escalation,</group>
+  </rule>
+
+  <rule id="100221" level="9">
+    <if_sid>5402</if_sid>
+    <description>ENS op.acc.3: Failed sudo attempt — unauthorized privilege escalation</description>
+    <group>ENS_op.acc.3,privilege_escalation,</group>
+  </rule>
+
+  <!-- ============================================================
+       op.acc.4 — Proceso de gestión de derechos de acceso
+       User account creation, modification, deletion
+       ============================================================ -->
+
+  <rule id="100230" level="8">
+    <if_sid>5901</if_sid>
+    <description>ENS op.acc.4: New user account created</description>
+    <group>ENS_op.acc.4,account_changed,</group>
+  </rule>
+
+  <rule id="100231" level="8">
+    <if_sid>5902</if_sid>
+    <description>ENS op.acc.4: User account deleted</description>
+    <group>ENS_op.acc.4,account_changed,</group>
+  </rule>
+
+  <rule id="100232" level="7">
+    <if_sid>5903</if_sid>
+    <description>ENS op.acc.4: User account modified</description>
+    <group>ENS_op.acc.4,account_changed,</group>
+  </rule>
+
+  <rule id="100233" level="9">
+    <if_sid>5905</if_sid>
+    <description>ENS op.acc.4: User added to privileged group</description>
+    <group>ENS_op.acc.4,ENS_op.acc.3,account_changed,</group>
+  </rule>
+
+  <!-- ============================================================
+       op.exp.3 — Gestión de la configuración
+       op.exp.5 — Gestión de cambios
+       File integrity monitoring events (FIM)
+       ============================================================ -->
+
+  <rule id="100300" level="7">
+    <if_sid>550</if_sid>
+    <description>ENS op.exp.3: Integrity checksum changed on monitored file</description>
+    <group>ENS_op.exp.3,ENS_op.exp.5,fim_change,</group>
+  </rule>
+
+  <rule id="100301" level="7">
+    <if_sid>554</if_sid>
+    <description>ENS op.exp.3: New file added to monitored directory</description>
+    <group>ENS_op.exp.3,ENS_op.exp.5,fim_change,</group>
+  </rule>
+
+  <rule id="100302" level="12">
+    <if_sid>550</if_sid>
+    <match>/etc/passwd|/etc/shadow|/etc/sudoers|/etc/ssh/sshd_config</match>
+    <description>ENS op.exp.3/op.acc: Critical system file modified</description>
+    <group>ENS_op.exp.3,ENS_op.acc.1,ENS_op.acc.6,fim_change,</group>
+  </rule>
+
+  <!-- ============================================================
+       op.exp.6 — Protección frente a código dañino
+       Malware and rootkit detection events
+       ============================================================ -->
+
+  <rule id="100310" level="12">
+    <if_sid>510, 511, 512, 513</if_sid>
+    <description>ENS op.exp.6: Rootkit or malware detected</description>
+    <group>ENS_op.exp.6,malware,</group>
+  </rule>
+
+  <!-- ============================================================
+       op.exp.7 — Gestión de incidentes
+       op.exp.9 — Registro de la gestión de incidentes
+       High severity and repeated attack events
+       ============================================================ -->
+
+  <rule id="100320" level="12">
+    <if_sid>40101</if_sid>
+    <description>ENS op.exp.7: Multiple authentication failures — possible brute force incident</description>
+    <group>ENS_op.exp.7,ENS_op.exp.9,brute_force,</group>
+  </rule>
+
+  <rule id="100321" level="10">
+    <if_sid>40111</if_sid>
+    <description>ENS op.exp.7: Authentication failures from multiple sources</description>
+    <group>ENS_op.exp.7,ENS_op.acc.6,brute_force,</group>
+  </rule>
+
+  <!-- ============================================================
+       op.exp.8 — Registro de la actividad de los usuarios
+       Audit log events
+       ============================================================ -->
+
+  <rule id="100330" level="3">
+    <if_sid>80700, 80701, 80702, 80703</if_sid>
+    <description>ENS op.exp.8: Audit log event recorded</description>
+    <group>ENS_op.exp.8,audit_log,</group>
+  </rule>
+
+  <rule id="100331" level="12">
+    <if_sid>80711</if_sid>
+    <description>ENS op.exp.8/op.exp.10: Audit daemon stopped — logging interrupted</description>
+    <group>ENS_op.exp.8,ENS_op.exp.10,</group>
+  </rule>
+
+  <!-- ============================================================
+       op.exp.10 — Protección de los registros de actividad
+       Log tampering and deletion
+       ============================================================ -->
+
+  <rule id="100340" level="12">
+    <if_sid>591, 592</if_sid>
+    <match>/var/log</match>
+    <description>ENS op.exp.10: Log file deleted or truncated</description>
+    <group>ENS_op.exp.10,fim_change,</group>
+  </rule>
+
+  <!-- ============================================================
+       op.mon.1 — Detección de intrusión
+       Network and intrusion detection events
+       ============================================================ -->
+
+  <rule id="100400" level="10">
+    <if_sid>40501</if_sid>
+    <description>ENS op.mon.1: Port scan detected</description>
+    <group>ENS_op.mon.1,network_scan,</group>
+  </rule>
+
+  <rule id="100401" level="9">
+    <if_sid>5104</if_sid>
+    <description>ENS op.mon.1: New remote connection established</description>
+    <group>ENS_op.mon.1,</group>
+  </rule>
+
+  <!-- ============================================================
+       mp.com.2 — Protección de la confidencialidad
+       mp.com.3 — Autenticidad e integridad
+       TLS / cryptography events
+       ============================================================ -->
+
+  <rule id="100500" level="9">
+    <if_sid>5716</if_sid>
+    <description>ENS mp.com.2: Weak SSH cipher or protocol used</description>
+    <group>ENS_mp.com.2,ENS_op.acc.6,</group>
+  </rule>
+
+  <!-- ============================================================
+       mp.s.2 — Protección de servicios y aplicaciones web
+       Unexpected service start/stop events
+       ============================================================ -->
+
+  <rule id="100600" level="8">
+    <if_sid>502</if_sid>
+    <description>ENS mp.s.2: System service started unexpectedly</description>
+    <group>ENS_mp.s.2,service_change,</group>
+  </rule>
+
+  <rule id="100601" level="8">
+    <if_sid>503</if_sid>
+    <description>ENS mp.s.2: System service stopped unexpectedly</description>
+    <group>ENS_mp.s.2,service_change,</group>
+  </rule>
+
+</group>

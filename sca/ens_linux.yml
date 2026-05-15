@@ -1,0 +1,660 @@
+policy:
+  id: "ens_linux"
+  file: "ens_linux.yml"
+  name: "ENS (Esquema Nacional de Seguridad) - Linux"
+  description: "Security configuration checks based on the Spanish National Security Framework (Real Decreto 311/2022). Covers Básico, Medio, and Alto levels. Each check is tagged with its applicable ENS control and minimum compliance level."
+  references:
+    - https://www.boe.es/boe/dias/2022/05/03/pdfs/BOE-A-2022-7191.pdf
+    - https://github.com/fredycibersec/ENS-Wazuh-integration
+
+requirements:
+  title: "Linux"
+  description: "Requirements to run this SCA policy"
+  condition: any
+  rules:
+    - 'f:/proc/sys/kernel/ostype -> Linux'
+
+variables:
+  $sshd_config: /etc/ssh/sshd_config
+  $audit_conf: /etc/audit/auditd.conf
+  $login_defs: /etc/login.defs
+  $pam_d: /etc/pam.d
+  $sudoers: /etc/sudoers
+  $sysctl_conf: /etc/sysctl.conf
+
+checks:
+
+  ############################################################
+  # op.acc — Control de Acceso
+  ############################################################
+
+  # op.acc.1 — Identificación
+
+  - id: 30001
+    title: "Ensure SSH root login is disabled [op.acc.1] [Básico]"
+    description: "The root account should not be allowed to login directly via SSH."
+    rationale: "Direct root login bypasses individual accountability. ENS op.acc.1 requires proper user identification."
+    remediation: "Set 'PermitRootLogin no' in /etc/ssh/sshd_config and restart the SSH service."
+    compliance:
+      - ens: "op.acc.1"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*PermitRootLogin\s+no'
+
+  - id: 30002
+    title: "Ensure no duplicate UIDs exist [op.acc.1] [Básico]"
+    description: "All UIDs assigned in /etc/passwd must be unique."
+    rationale: "Duplicate UIDs make individual user identification impossible and can allow privilege escalation."
+    remediation: "Review /etc/passwd and ensure all UIDs are unique."
+    compliance:
+      - ens: "op.acc.1"
+      - ens_nivel: "Básico"
+    condition: none
+    rules:
+      - 'c:awk -F: "seen[$3]++{print $1}" /etc/passwd -> r:\w'
+
+  - id: 30003
+    title: "Ensure no duplicate usernames exist [op.acc.1] [Básico]"
+    description: "All usernames in /etc/passwd must be unique."
+    rationale: "Duplicate usernames cause authentication ambiguity and access control bypass."
+    remediation: "Review /etc/passwd and remove or rename duplicate accounts."
+    compliance:
+      - ens: "op.acc.1"
+      - ens_nivel: "Básico"
+    condition: none
+    rules:
+      - 'c:awk -F: "seen[$1]++{print $1}" /etc/passwd -> r:\w'
+
+  - id: 30004
+    title: "Ensure default system accounts are non-login [op.acc.1] [Básico]"
+    description: "System accounts (UID < 1000) should not have a valid login shell."
+    rationale: "Service accounts should not be usable for interactive login."
+    remediation: "Set the shell for system accounts to /sbin/nologin or /bin/false."
+    compliance:
+      - ens: "op.acc.1"
+      - ens_nivel: "Básico"
+    condition: none
+    rules:
+      - 'c:awk -F: "($3 < 1000 && $1 != \"root\" && $7 !~ /nologin|false/) {print $1}" /etc/passwd -> r:\w'
+
+  # op.acc.2 — Requisitos de acceso
+
+  - id: 30010
+    title: "Ensure password minimum length is 12 or more [op.acc.2] [Básico]"
+    description: "Password minimum length must be at least 12 characters."
+    rationale: "Short passwords are vulnerable to brute force. ENS op.acc.2 mandates adequate access requirements."
+    remediation: "Set PASS_MIN_LEN to 12 or more in /etc/login.defs."
+    compliance:
+      - ens: "op.acc.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$login_defs -> r:^\s*PASS_MIN_LEN\s+(1[2-9]|[2-9]\d|\d{3,})'
+
+  - id: 30011
+    title: "Ensure password maximum age is 90 days or less [op.acc.2] [Básico]"
+    description: "Passwords must expire within 90 days."
+    rationale: "Regular password rotation limits exposure time of compromised credentials."
+    remediation: "Set PASS_MAX_DAYS to 90 or less in /etc/login.defs."
+    compliance:
+      - ens: "op.acc.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$login_defs -> r:^\s*PASS_MAX_DAYS\s+([1-8]\d|90)\s*$'
+
+  - id: 30012
+    title: "Ensure password minimum age is 1 day or more [op.acc.2] [Básico]"
+    description: "Minimum days between password changes must be at least 1."
+    rationale: "Prevents users from cycling through passwords to reuse old ones immediately."
+    remediation: "Set PASS_MIN_DAYS to 1 or more in /etc/login.defs."
+    compliance:
+      - ens: "op.acc.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$login_defs -> r:^\s*PASS_MIN_DAYS\s+[1-9]'
+
+  - id: 30013
+    title: "Ensure password expiry warning is 7 days or more [op.acc.2] [Básico]"
+    description: "Users must receive a warning at least 7 days before password expiry."
+    rationale: "Advance warning prevents unexpected access loss."
+    remediation: "Set PASS_WARN_AGE to 7 or more in /etc/login.defs."
+    compliance:
+      - ens: "op.acc.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$login_defs -> r:^\s*PASS_WARN_AGE\s+([7-9]|\d{2,})'
+
+  # op.acc.3 — Segregación de funciones
+
+  - id: 30020
+    title: "Ensure sudo is installed [op.acc.3] [Básico]"
+    description: "sudo must be installed to enforce least privilege access."
+    rationale: "ENS op.acc.3 requires segregation of duties. sudo enables controlled privilege escalation."
+    remediation: "Install sudo: apt install sudo / yum install sudo."
+    compliance:
+      - ens: "op.acc.3"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sudo -V -> r:Sudo version'
+
+  - id: 30021
+    title: "Ensure NOPASSWD is not configured for sensitive commands [op.acc.3] [Básico]"
+    description: "The NOPASSWD directive should not be present in sudoers."
+    rationale: "NOPASSWD allows privilege escalation without authentication, violating the segregation requirement."
+    remediation: "Review and remove NOPASSWD from /etc/sudoers and /etc/sudoers.d/."
+    compliance:
+      - ens: "op.acc.3"
+      - ens_nivel: "Básico"
+    condition: none
+    rules:
+      - 'f:/etc/sudoers -> r:NOPASSWD'
+      - 'd:/etc/sudoers.d -> r:NOPASSWD'
+
+  # op.acc.6 — Mecanismo de autenticación (usuarios de la organización)
+
+  - id: 30030
+    title: "Ensure SSH MaxAuthTries is 4 or less [op.acc.6] [Básico]"
+    description: "SSH authentication attempts must be limited."
+    rationale: "Limiting retries protects against brute force attacks on SSH."
+    remediation: "Set MaxAuthTries to 4 or less in /etc/ssh/sshd_config."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*MaxAuthTries\s+[1-4]\s*$'
+
+  - id: 30031
+    title: "Ensure SSH idle timeout is configured [op.acc.6] [Básico]"
+    description: "SSH sessions must time out after inactivity."
+    rationale: "Unattended SSH sessions are a significant security risk."
+    remediation: "Set ClientAliveInterval 300 and ClientAliveCountMax 0 in sshd_config."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*ClientAliveInterval\s+[1-9]'
+      - 'f:$sshd_config -> r:^\s*ClientAliveCountMax\s+[0-3]'
+
+  - id: 30032
+    title: "Ensure SSH PermitEmptyPasswords is disabled [op.acc.6] [Básico]"
+    description: "SSH must not allow authentication with empty passwords."
+    rationale: "Empty passwords provide no security whatsoever."
+    remediation: "Set PermitEmptyPasswords no in /etc/ssh/sshd_config."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*PermitEmptyPasswords\s+no'
+
+  - id: 30033
+    title: "Ensure SSH HostbasedAuthentication is disabled [op.acc.6] [Básico]"
+    description: "Host-based authentication should be disabled."
+    rationale: "Host-based auth relies on IP/hostname which can be spoofed."
+    remediation: "Set HostbasedAuthentication no in /etc/ssh/sshd_config."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*HostbasedAuthentication\s+no'
+
+  - id: 30034
+    title: "Ensure SSH login warning banner is configured [op.acc.6] [Básico]"
+    description: "SSH must display a legal warning banner before authentication."
+    rationale: "Legal notice is required for authorized-use-only systems."
+    remediation: "Set Banner /etc/issue.net in /etc/ssh/sshd_config."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*Banner\s+'
+
+  - id: 30035
+    title: "Ensure SSH uses strong key exchange algorithms [op.acc.6] [Medio]"
+    description: "SSH must use only strong key exchange algorithms."
+    rationale: "Weak key exchange can be exploited to compromise session keys."
+    remediation: "Set KexAlgorithms to curve25519-sha256,diffie-hellman-group14-sha256 or better in sshd_config."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*KexAlgorithms\s+'
+
+  # op.acc.7 — Acceso remoto
+
+  - id: 30040
+    title: "Ensure SSH AllowTcpForwarding is disabled [op.acc.7] [Medio]"
+    description: "TCP forwarding through SSH should be disabled."
+    rationale: "TCP forwarding can bypass network controls and expose internal services."
+    remediation: "Set AllowTcpForwarding no in /etc/ssh/sshd_config."
+    compliance:
+      - ens: "op.acc.7"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*AllowTcpForwarding\s+no'
+
+  - id: 30041
+    title: "Ensure SSH X11Forwarding is disabled [op.acc.7] [Medio]"
+    description: "X11 forwarding via SSH should be disabled."
+    rationale: "X11 forwarding exposes the local display to injection risks."
+    remediation: "Set X11Forwarding no in /etc/ssh/sshd_config."
+    compliance:
+      - ens: "op.acc.7"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*X11Forwarding\s+no'
+
+  ############################################################
+  # op.exp — Explotación
+  ############################################################
+
+  # op.exp.2 — Configuración de seguridad
+
+  - id: 30100
+    title: "Ensure filesystem integrity checking tool is installed [op.exp.2] [Básico]"
+    description: "AIDE or equivalent must be installed for file integrity monitoring."
+    rationale: "ENS op.exp.2 requires configuration verification. Integrity tools detect unauthorized changes."
+    remediation: "Install AIDE: apt install aide / yum install aide."
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'c:rpm -q aide -> r:^aide-'
+      - 'c:dpkg -s aide -> r:Status: install ok'
+
+  - id: 30101
+    title: "Ensure ASLR is enabled [op.exp.2] [Básico]"
+    description: "Address Space Layout Randomization must be enabled."
+    rationale: "ASLR makes exploitation of memory vulnerabilities significantly harder."
+    remediation: "Set kernel.randomize_va_space = 2 in /etc/sysctl.conf."
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl kernel.randomize_va_space -> r:kernel.randomize_va_space\s*=\s*2'
+
+  - id: 30102
+    title: "Ensure core dumps are restricted [op.exp.2] [Básico]"
+    description: "Core dumps from SUID programs must be restricted."
+    rationale: "Core dumps can expose sensitive data including passwords and cryptographic material."
+    remediation: "Set fs.suid_dumpable = 0 in /etc/sysctl.conf."
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl fs.suid_dumpable -> r:fs.suid_dumpable\s*=\s*0'
+
+  - id: 30103
+    title: "Ensure SELinux or AppArmor is active and enforcing [op.exp.2] [Medio]"
+    description: "Mandatory Access Control must be enabled and in enforcing mode."
+    rationale: "MAC limits the damage from compromised processes by enforcing least privilege at the kernel level."
+    remediation: "Enable SELinux in enforcing mode (setenforce 1) or configure AppArmor profiles."
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Medio"
+    condition: any
+    rules:
+      - 'c:sestatus -> r:SELinux status:\s+enabled'
+      - 'c:sestatus -> r:Current mode:\s+enforcing'
+      - 'c:apparmor_status -> r:apparmor module is loaded'
+
+  - id: 30104
+    title: "Ensure IP forwarding is disabled [op.exp.2] [Básico]"
+    description: "IP forwarding should be disabled on non-router systems."
+    rationale: "Enabling IP forwarding can turn the system into an unintended network relay."
+    remediation: "Set net.ipv4.ip_forward = 0 in /etc/sysctl.conf."
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl net.ipv4.ip_forward -> r:net.ipv4.ip_forward\s*=\s*0'
+
+  - id: 30105
+    title: "Ensure source routing is disabled [op.exp.2] [Básico]"
+    description: "Source-routed packets should be rejected."
+    rationale: "Source routing can be used to bypass firewalls and route traffic through attacker paths."
+    remediation: "Set net.ipv4.conf.all.accept_source_route = 0 in /etc/sysctl.conf."
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl net.ipv4.conf.all.accept_source_route -> r:net.ipv4.conf.all.accept_source_route\s*=\s*0'
+
+  # op.exp.6 — Protección frente a código dañino
+
+  - id: 30110
+    title: "Ensure antimalware software is installed [op.exp.6] [Básico]"
+    description: "An antimalware or endpoint protection tool must be present."
+    rationale: "ENS op.exp.6 explicitly requires protection against malicious code."
+    remediation: "Install ClamAV (apt install clamav) or ensure the Wazuh agent is installed."
+    compliance:
+      - ens: "op.exp.6"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'c:rpm -q clamav -> r:^clamav-'
+      - 'c:dpkg -s clamav -> r:Status: install ok'
+      - 'c:systemctl is-active wazuh-agent -> r:^active'
+
+  # op.exp.8 — Registro de la actividad de los usuarios
+
+  - id: 30120
+    title: "Ensure auditd is installed [op.exp.8] [Básico]"
+    description: "The auditd daemon must be installed for user activity logging."
+    rationale: "ENS op.exp.8 requires logging of all user actions. auditd provides kernel-level audit."
+    remediation: "Install auditd: apt install auditd / yum install audit."
+    compliance:
+      - ens: "op.exp.8"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'c:rpm -q audit -> r:^audit-'
+      - 'c:dpkg -s auditd -> r:Status: install ok'
+
+  - id: 30121
+    title: "Ensure auditd service is active [op.exp.8] [Básico]"
+    description: "The auditd service must be running."
+    rationale: "Logging is only effective if the service is actually running."
+    remediation: "Enable and start auditd: systemctl enable --now auditd."
+    compliance:
+      - ens: "op.exp.8"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:systemctl is-active auditd -> r:^active'
+
+  - id: 30122
+    title: "Ensure audit log size is configured [op.exp.8] [Básico]"
+    description: "Maximum audit log file size must be defined."
+    rationale: "Unbounded log size can exhaust disk space or be used to evade audit."
+    remediation: "Set max_log_file in /etc/audit/auditd.conf (e.g., max_log_file = 100)."
+    compliance:
+      - ens: "op.exp.8"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:$audit_conf -> r:^\s*max_log_file\s*=\s*[1-9]'
+
+  - id: 30123
+    title: "Ensure audit logs are retained [op.exp.8, op.exp.10] [Medio]"
+    description: "Audit logs must be kept and not automatically deleted."
+    rationale: "ENS op.exp.10 requires protection of activity logs. Deletion undermines forensic capability."
+    remediation: "Set max_log_file_action = keep_logs in /etc/audit/auditd.conf."
+    compliance:
+      - ens: "op.exp.8"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:$audit_conf -> r:^\s*max_log_file_action\s*=\s*keep_logs'
+
+  - id: 30124
+    title: "Ensure login and logout events are audited [op.exp.8] [Básico]"
+    description: "User login and logout events must be captured."
+    rationale: "Session tracking is fundamental for accountability and incident investigation."
+    remediation: "Add: -w /var/log/lastlog -p wa -k logins in audit rules."
+    compliance:
+      - ens: "op.exp.8"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:auditctl -l -> r:-w /var/log/lastlog -p wa'
+
+  - id: 30125
+    title: "Ensure sudo usage is audited [op.exp.8] [Medio]"
+    description: "All sudo command executions must be logged."
+    rationale: "Privileged command execution must be traceable for accountability."
+    remediation: "Add: -w /usr/bin/sudo -p x -k sudo_usage in audit rules."
+    compliance:
+      - ens: "op.exp.8"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'c:auditctl -l -> r:-w /usr/bin/sudo'
+
+  # op.exp.10 — Protección de los registros de actividad
+
+  - id: 30130
+    title: "Ensure rsyslog is installed and active [op.exp.10] [Básico]"
+    description: "A syslog service must be installed and running."
+    rationale: "ENS op.exp.10 requires management and protection of system logs."
+    remediation: "Install rsyslog: apt install rsyslog && systemctl enable --now rsyslog."
+    compliance:
+      - ens: "op.exp.10"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'c:systemctl is-active rsyslog -> r:^active'
+      - 'c:systemctl is-active syslog -> r:^active'
+
+  - id: 30131
+    title: "Ensure remote logging is configured [op.exp.10] [Medio]"
+    description: "System logs should be forwarded to a remote log server."
+    rationale: "Remote logging ensures logs survive local system compromise or failure."
+    remediation: "Configure rsyslog to forward to a remote server (@@remote-host:514)."
+    compliance:
+      - ens: "op.exp.10"
+      - ens_nivel: "Medio"
+    condition: any
+    rules:
+      - 'f:/etc/rsyslog.conf -> r:^\s*\*\.\*\s+@@'
+      - 'd:/etc/rsyslog.d -> r:@@'
+
+  ############################################################
+  # op.mon — Monitorización del sistema
+  ############################################################
+
+  - id: 30200
+    title: "Ensure Wazuh agent is installed and active [op.mon.1] [Básico]"
+    description: "The Wazuh agent must be installed and running."
+    rationale: "ENS op.mon.1 requires intrusion detection capabilities."
+    remediation: "Install and configure the Wazuh agent for this system."
+    compliance:
+      - ens: "op.mon.1"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:systemctl is-active wazuh-agent -> r:^active'
+
+  - id: 30201
+    title: "Ensure host-based firewall is active [op.mon.1] [Básico]"
+    description: "A host firewall must be enabled and running."
+    rationale: "A local firewall provides perimeter control and reduces attack surface."
+    remediation: "Enable ufw (ufw enable) or firewalld (systemctl enable --now firewalld)."
+    compliance:
+      - ens: "op.mon.1"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'c:ufw status -> r:Status: active'
+      - 'c:firewall-cmd --state -> r:running'
+      - 'c:systemctl is-active iptables -> r:^active'
+      - 'c:systemctl is-active nftables -> r:^active'
+
+  ############################################################
+  # mp.com — Protección de las comunicaciones
+  ############################################################
+
+  - id: 30300
+    title: "Ensure SSH uses strong ciphers [mp.com.2] [Medio]"
+    description: "SSH must be configured to use only strong encryption ciphers."
+    rationale: "Weak ciphers can be exploited to decrypt SSH sessions."
+    remediation: "Set Ciphers aes256-gcm@openssh.com,chacha20-poly1305@openssh.com,aes256-ctr in sshd_config."
+    compliance:
+      - ens: "mp.com.2"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*Ciphers\s+'
+
+  - id: 30301
+    title: "Ensure SSH uses strong MACs [mp.com.2, mp.com.3] [Medio]"
+    description: "SSH must use strong Message Authentication Codes."
+    rationale: "Weak MACs can allow message tampering in SSH sessions."
+    remediation: "Set MACs hmac-sha2-512,hmac-sha2-256 in /etc/ssh/sshd_config."
+    compliance:
+      - ens: "mp.com.2"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*MACs\s+'
+
+  - id: 30310
+    title: "Ensure package GPG signature verification is enabled [mp.com.3] [Básico]"
+    description: "The package manager must verify GPG signatures before installing packages."
+    rationale: "ENS mp.com.3 requires authenticity and integrity of software."
+    remediation: "Ensure gpgcheck=1 is set in /etc/yum.conf or equivalent."
+    compliance:
+      - ens: "mp.com.3"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'f:/etc/yum.conf -> r:^\s*gpgcheck\s*=\s*1'
+      - 'f:/etc/dnf/dnf.conf -> r:^\s*gpgcheck\s*=\s*1'
+
+  - id: 30320
+    title: "Ensure SYN flood protection is enabled [mp.s.3, mp.com.4] [Básico]"
+    description: "TCP SYN cookies must be enabled."
+    rationale: "ENS mp.s.3 requires protection against denial of service. SYN cookies mitigate SYN flood attacks."
+    remediation: "Set net.ipv4.tcp_syncookies = 1 in /etc/sysctl.conf."
+    compliance:
+      - ens: "mp.s.3"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl net.ipv4.tcp_syncookies -> r:net.ipv4.tcp_syncookies\s*=\s*1'
+
+  - id: 30321
+    title: "Ensure ICMP redirects are not accepted [mp.com.4] [Básico]"
+    description: "The system must not accept ICMP redirect messages."
+    rationale: "ICMP redirects can route traffic through malicious paths."
+    remediation: "Set net.ipv4.conf.all.accept_redirects = 0 in /etc/sysctl.conf."
+    compliance:
+      - ens: "mp.com.4"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl net.ipv4.conf.all.accept_redirects -> r:net.ipv4.conf.all.accept_redirects\s*=\s*0'
+
+  - id: 30322
+    title: "Ensure IPv6 router advertisements are not accepted [mp.com.4] [Básico]"
+    description: "The system should not process IPv6 router advertisements."
+    rationale: "Rogue router advertisements can redirect IPv6 traffic."
+    remediation: "Set net.ipv6.conf.all.accept_ra = 0 in /etc/sysctl.conf."
+    compliance:
+      - ens: "mp.com.4"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl net.ipv6.conf.all.accept_ra -> r:net.ipv6.conf.all.accept_ra\s*=\s*0'
+
+  ############################################################
+  # mp.eq — Protección de los equipos
+  ############################################################
+
+  - id: 30400
+    title: "Ensure shell timeout is configured [mp.eq.2] [Básico]"
+    description: "Interactive shell sessions must time out after inactivity."
+    rationale: "ENS mp.eq.2 requires workstation locking after a period of inactivity."
+    remediation: "Set TMOUT=600 (or lower) in /etc/profile or /etc/profile.d/timeout.sh."
+    compliance:
+      - ens: "mp.eq.2"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'f:/etc/profile -> r:^\s*TMOUT\s*='
+      - 'd:/etc/profile.d -> r:TMOUT\s*='
+
+  ############################################################
+  # mp.info — Protección de la información
+  ############################################################
+
+  - id: 30500
+    title: "Ensure disk encryption is in use [mp.info.3] [Medio]"
+    description: "Sensitive data partitions should use LUKS encryption."
+    rationale: "ENS mp.info.3 requires encryption of sensitive information at rest."
+    remediation: "Use LUKS to encrypt sensitive partitions (cryptsetup luksFormat)."
+    compliance:
+      - ens: "mp.info.3"
+      - ens_nivel: "Medio"
+    condition: any
+    rules:
+      - 'c:lsblk -o TYPE -> r:crypt'
+      - 'c:dmsetup ls --target crypt -> r:\w'
+
+  - id: 30510
+    title: "Ensure a backup solution is installed [mp.info.9] [Básico]"
+    description: "A backup tool must be present on the system."
+    rationale: "ENS mp.info.9 requires regular backups to ensure recovery capability."
+    remediation: "Install a backup solution such as rsync, Bacula, or Duplicati."
+    compliance:
+      - ens: "mp.info.9"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'c:rpm -q rsync -> r:^rsync-'
+      - 'c:dpkg -s rsync -> r:Status: install ok'
+
+  ############################################################
+  # mp.s — Protección de los servicios
+  ############################################################
+
+  - id: 30600
+    title: "Ensure Telnet is not installed [mp.s.2] [Básico]"
+    description: "The telnet client and server must not be installed."
+    rationale: "Telnet transmits data in cleartext including credentials. It must not be used."
+    remediation: "Remove telnet: apt remove telnet / yum remove telnet."
+    compliance:
+      - ens: "mp.s.2"
+      - ens_nivel: "Básico"
+    condition: none
+    rules:
+      - 'c:rpm -q telnet -> r:^telnet-'
+      - 'c:dpkg -s telnet -> r:Status: install ok installed'
+
+  - id: 30601
+    title: "Ensure rsh, rlogin, and rexec are not installed [mp.s.2] [Básico]"
+    description: "Legacy r-commands must not be installed."
+    rationale: "r-commands use cleartext and host-based authentication, both insecure."
+    remediation: "Remove rsh-client and rsh-server packages."
+    compliance:
+      - ens: "mp.s.2"
+      - ens_nivel: "Básico"
+    condition: none
+    rules:
+      - 'c:dpkg -s rsh-client -> r:Status: install ok installed'
+      - 'c:rpm -q rsh -> r:^rsh-'
+
+  ############################################################
+  # mp.sw — Protección de las aplicaciones informáticas
+  ############################################################
+
+  - id: 30700
+    title: "Ensure automatic security updates are configured [mp.sw.2] [Básico]"
+    description: "The system should apply security updates automatically."
+    rationale: "ENS mp.sw.2 requires verification and maintenance of software in service."
+    remediation: "Enable unattended-upgrades (Debian/Ubuntu) or dnf-automatic (RHEL/CentOS)."
+    compliance:
+      - ens: "mp.sw.2"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'c:systemctl is-active unattended-upgrades -> r:^active'
+      - 'c:systemctl is-active dnf-automatic -> r:^active'
+      - 'c:systemctl is-enabled dnf-automatic -> r:enabled'
