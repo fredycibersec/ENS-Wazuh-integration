@@ -92,7 +92,17 @@ Add the following inside the `<sca>` block in `/var/ossec/etc/ossec.conf`:
 sudo cp rules/ens_detection_rules.xml /var/ossec/etc/rules/
 ```
 
-### 4. Restart Wazuh manager
+### 4. Import the dashboard into OpenSearch
+
+1. Open OpenSearch Dashboards (usually at `https://<wazuh-ip>`)
+2. Go to **Stack Management → Saved Objects → Import**
+3. Upload `dashboards/ens_dashboard.ndjson`
+4. Select **Overwrite existing objects** if prompted
+5. Navigate to **Dashboards → ENS — Esquema Nacional de Seguridad**
+
+> **Note:** The dashboard references the `wazuh-alerts-*` index pattern. If your Wazuh installation uses a different name, update the index pattern ID in the NDJSON before importing.
+
+### 5. Restart Wazuh manager
 
 ```bash
 sudo systemctl restart wazuh-manager
