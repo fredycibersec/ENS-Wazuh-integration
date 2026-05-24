@@ -88,11 +88,39 @@ ok "curl: $(curl --version | head -1)"
 
 sep "Credentials"
 
-try_extract_from_tar() {
+# Read wazuh-passwords.txt from the tar, trying both known internal paths
+read_passwords_file() {
     local tar_file="$1"
-    local field="$2"
-    tar -xOf "$tar_file" wazuh-install-files/wazuh-passwords.txt 2>/dev/null | \
-        grep -A1 "^# $field" | grep "password:" | awk '{print $NF}' || true
+    # Wazuh 4.3+ path
+    tar -xOf "$tar_file" wazuh-install-files/wazuh-passwords.txt 2>/dev/null && return
+    # Older / flat path
+    tar -xOf "$tar_file" wazuh-passwords.txt 2>/dev/null && return
+    return 1
+}
+
+# Extract password for a given username, handling all known Wazuh format variants:
+#   Format A (4.3+): "username: X\npassword: Y"  (may have quotes)
+#   Format B:        "The password for user 'X' is: Y"
+#   Format C:        "X: Y"  (bare key: value)
+extract_password() {
+    local content="$1"
+    local username="$2"
+    local pass=""
+
+    # Format A — username: X followed within 3 lines by password: Y
+    pass=$(echo "$content" | grep -A3 "username:[ ]*[\"']\\?${username}[\"']\\?" \
+        | grep -m1 "password:" | sed "s/.*password:[ ]*//" | tr -d '"'"'" | awk '{print $1}')
+    [[ -n "$pass" ]] && echo "$pass" && return
+
+    # Format B — "The password for ... 'X' ... is: Y" (single line)
+    pass=$(echo "$content" | grep -i "'${username}'" | grep -oP '(?<=is: )\S+' | head -1)
+    [[ -n "$pass" ]] && echo "$pass" && return
+
+    # Format C — bare "username: password" on one line (e.g. "admin: MyPass")
+    pass=$(echo "$content" | grep -m1 "^${username}:[ ]" | awk '{print $2}')
+    [[ -n "$pass" ]] && echo "$pass" && return
+
+    return 1
 }
 
 find_tar() {
@@ -110,18 +138,28 @@ INSTALL_TAR=$(find_tar || true)
 
 if [[ -n "$INSTALL_TAR" ]]; then
     info "Found installation archive: ${INSTALL_TAR}"
-    if [[ -z "$WAZUH_PASS" ]]; then
-        WAZUH_PASS=$(try_extract_from_tar "$INSTALL_TAR" "Wazuh API")
-        [[ -n "$WAZUH_PASS" ]] && info "Wazuh API password read from tar"
-    fi
-    if [[ -z "$OS_PASS" ]]; then
-        OS_PASS=$(try_extract_from_tar "$INSTALL_TAR" "OpenSearch")
-        # Fallback: look for 'admin' user entry
-        if [[ -z "$OS_PASS" ]]; then
-            OS_PASS=$(tar -xOf "$INSTALL_TAR" wazuh-install-files/wazuh-passwords.txt 2>/dev/null | \
-                grep -A1 "user: admin" | grep "password:" | awk '{print $NF}' || true)
+    PASSWORDS_CONTENT=$(read_passwords_file "$INSTALL_TAR" 2>/dev/null || true)
+
+    if [[ -z "$PASSWORDS_CONTENT" ]]; then
+        warn "Could not read wazuh-passwords.txt from tar — will prompt for credentials"
+    else
+        if [[ -z "$WAZUH_PASS" ]]; then
+            WAZUH_PASS=$(extract_password "$PASSWORDS_CONTENT" "wazuh-wui" || true)
+            [[ -n "$WAZUH_PASS" ]] && info "Wazuh API password (wazuh-wui) read from tar" \
+                || warn "Could not parse wazuh-wui password from tar"
         fi
-        [[ -n "$OS_PASS" ]] && info "OpenSearch password read from tar"
+        if [[ -z "$OS_PASS" ]]; then
+            OS_PASS=$(extract_password "$PASSWORDS_CONTENT" "admin" || true)
+            [[ -n "$OS_PASS" ]] && info "OpenSearch password (admin) read from tar" \
+                || warn "Could not parse admin password from tar"
+        fi
+
+        # If either is still empty, show the relevant lines to help diagnose
+        if [[ -z "$WAZUH_PASS" || -z "$OS_PASS" ]]; then
+            warn "Password file content (relevant lines):"
+            echo "$PASSWORDS_CONTENT" | grep -iE "username|password|admin|wazuh-wui|wazuh api" \
+                | sed 's/^/    /' || true
+        fi
     fi
 else
     warn "wazuh-install-files.tar not found — will prompt for credentials"
