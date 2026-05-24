@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials and secrets — never commit these
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+.env
+.env.*
+secrets.yml
+secrets.yaml
+credentials.json
+
+# Local test artifacts
+tests/output/
+tests/*.log
+*.log
+
+# Temporary export files
+dashboards/export_*.ndjson
+dashboards/backup_*.ndjson
