@@ -90,7 +90,7 @@ fi
 # --- Validate configuration ---
 
 info "Validating Wazuh configuration..."
-if "${WAZUH_DIR}/bin/wazuh-control" check-config 2>/dev/null; then
+if "${WAZUH_DIR}/bin/wazuh-analysisd" -t 2>/dev/null; then
   info "Configuration validation passed."
 else
   warn "Configuration validation returned warnings. Check ossec.conf manually."
