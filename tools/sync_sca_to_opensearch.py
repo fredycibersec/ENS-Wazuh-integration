@@ -123,9 +123,15 @@ def load_credentials_from_tar():
     if not tar_path:
         return {}
 
+    # File found — check we can actually read it
+    if not os.access(tar_path, os.R_OK):
+        log.warning("Found %s but cannot read it (permission denied)", tar_path)
+        log.warning("Run the script as root:  sudo python3 %s", sys.argv[0])
+        return {}
+
     content = _read_passwords_from_tar(tar_path)
     if not content:
-        log.debug("Found tar at %s but could not read passwords file", tar_path)
+        log.warning("Found %s but could not extract wazuh-passwords.txt from it", tar_path)
         return {}
 
     log.info("Reading credentials from %s", tar_path)
@@ -161,6 +167,12 @@ logging.basicConfig(
     datefmt="%Y-%m-%dT%H:%M:%S",
 )
 log = logging.getLogger("ens-sync")
+
+# Warn early if not root — the install tar is typically owned by root (700)
+if os.geteuid() != 0 and not any(os.getenv(v) for v in ("WAZUH_PASS", "OS_PASS")):
+    log.warning("Not running as root — wazuh-install-files.tar may not be readable")
+    log.warning("Run with:  sudo python3 %s", sys.argv[0])
+    log.warning("Or set credentials manually:  export WAZUH_PASS=xxx OS_PASS=xxx")
 
 # Load from tar first, then let env vars override
 _tar_creds = load_credentials_from_tar()
