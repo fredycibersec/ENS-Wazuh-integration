@@ -4,11 +4,13 @@ ENS SCA → OpenSearch bridge
 Polls the Wazuh API for ENS SCA check results and indexes them into
 a custom OpenSearch index (ens-sca-checks) for rich dashboard visualization.
 
-Credentials are read from environment variables. Set them before running:
+Credentials are loaded automatically from wazuh-install-files.tar if found
+in common locations (/root, /home/*, /tmp, /var/tmp). You can also set them
+via environment variables (env vars take priority over the tar):
 
-    export WAZUH_USER=wazuh-wui
+    export WAZUH_USER=wazuh-wui   # default
     export WAZUH_PASS=<password>
-    export OS_USER=admin
+    export OS_USER=admin           # default
     export OS_PASS=<password>
 
 Optional overrides (defaults shown):
@@ -18,14 +20,17 @@ Optional overrides (defaults shown):
     export ENS_POLICIES=ens_linux,ens_windows
 
 Usage:
-    python3 tools/sync_sca_to_opensearch.py [--dry-run]
+    python3 tools/sync_sca_to_opensearch.py [--dry-run] [--diagnose] [--include-manager]
 """
 
+import glob
 import os
 import sys
 import json
 import logging
 import argparse
+import tarfile
+import re
 from datetime import datetime, timezone
 
 try:
@@ -36,14 +41,124 @@ except ImportError:
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# ── Credential auto-detection from wazuh-install-files.tar ────────────────────
+
+TAR_SEARCH_PATHS = ["/root", "/tmp", "/var/tmp"] + glob.glob("/home/*")
+TAR_INTERNAL_PATHS = [
+    "wazuh-install-files/wazuh-passwords.txt",
+    "wazuh-passwords.txt",
+]
+
+
+def _read_passwords_from_tar(tar_path):
+    """Return the text content of wazuh-passwords.txt inside the tar, or None."""
+    try:
+        with tarfile.open(tar_path, "r:*") as tf:
+            for internal in TAR_INTERNAL_PATHS:
+                try:
+                    member = tf.getmember(internal)
+                    return tf.extractfile(member).read().decode("utf-8", errors="replace")
+                except KeyError:
+                    continue
+    except Exception:
+        pass
+    return None
+
+
+def _extract_password(content, username):
+    """
+    Parse a password for *username* from wazuh-passwords.txt content.
+    Supports all known Wazuh 4.x format variants:
+      A) username: X  /  password: Y   (block format, quotes optional)
+      B) The password for user 'X' is: Y  (inline sentence)
+      C) X: Y  (bare key-value)
+    """
+    # Format A — multi-line block
+    block = re.search(
+        rf"username:\s*[\"']?{re.escape(username)}[\"']?\s*\n"
+        rf"(?:.*\n){{0,2}}?password:\s*[\"']?(\S+?)[\"']?\s*$",
+        content, re.MULTILINE,
+    )
+    if block:
+        return block.group(1)
+
+    # Format B — inline sentence
+    sentence = re.search(
+        rf"['\"]?{re.escape(username)}['\"]?[^'\"\n]*?(?:is|password)[:\s]+['\"]?(\S+?)['\"]?\s*$",
+        content, re.IGNORECASE | re.MULTILINE,
+    )
+    if sentence:
+        return sentence.group(1)
+
+    # Format C — bare key: value
+    bare = re.search(rf"^{re.escape(username)}:\s+(\S+)", content, re.MULTILINE)
+    if bare:
+        return bare.group(1)
+
+    return None
+
+
+def _find_tar():
+    for directory in TAR_SEARCH_PATHS:
+        pattern = os.path.join(directory, "wazuh-install-files.tar")
+        matches = glob.glob(pattern)
+        if matches:
+            return matches[0]
+    return None
+
+
+def load_credentials_from_tar():
+    """
+    Try to read WAZUH_PASS and OS_PASS from wazuh-install-files.tar.
+    Returns a dict with the keys found; missing keys are absent.
+    """
+    tar_path = _find_tar()
+    if not tar_path:
+        return {}
+
+    content = _read_passwords_from_tar(tar_path)
+    if not content:
+        log.debug("Found tar at %s but could not read passwords file", tar_path)
+        return {}
+
+    log.info("Reading credentials from %s", tar_path)
+    creds = {}
+
+    wazuh_pass = _extract_password(content, "wazuh-wui")
+    if wazuh_pass:
+        creds["WAZUH_PASS"] = wazuh_pass
+        log.info("  wazuh-wui password: loaded from tar")
+    else:
+        log.warning("  wazuh-wui password: not found in tar (will need env var)")
+
+    admin_pass = _extract_password(content, "admin")
+    if admin_pass:
+        creds["OS_PASS"] = admin_pass
+        log.info("  admin password: loaded from tar")
+    else:
+        log.warning("  admin password: not found in tar (will need env var)")
+
+    return creds
+
+
 # ── Configuration ──────────────────────────────────────────────────────────────
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+log = logging.getLogger("ens-sync")
+
+# Load from tar first, then let env vars override
+_tar_creds = load_credentials_from_tar()
 
 WAZUH_HOST   = os.getenv("WAZUH_HOST",   "https://localhost:55000")
 WAZUH_USER   = os.getenv("WAZUH_USER",   "wazuh-wui")
-WAZUH_PASS   = os.getenv("WAZUH_PASS",   "")
+WAZUH_PASS   = os.getenv("WAZUH_PASS",   _tar_creds.get("WAZUH_PASS", ""))
 OS_HOST      = os.getenv("OS_HOST",      "https://localhost:9200")
-OS_USER      = os.getenv("OS_USER",      "")
-OS_PASS      = os.getenv("OS_PASS",      "")
+OS_USER      = os.getenv("OS_USER",      "admin")
+OS_PASS      = os.getenv("OS_PASS",      _tar_creds.get("OS_PASS", ""))
 OS_INDEX     = os.getenv("OS_INDEX",     "ens-sca-checks")
 ENS_POLICIES = os.getenv("ENS_POLICIES", "ens_linux,ens_windows").split(",")
 
@@ -230,10 +345,16 @@ def bulk_index(docs):
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def check_env():
-    missing = [v for v in ("WAZUH_PASS", "OS_USER", "OS_PASS") if not os.getenv(v)]
+    missing = []
+    if not WAZUH_PASS:
+        missing.append("WAZUH_PASS")
+    if not OS_PASS:
+        missing.append("OS_PASS")
     if missing:
-        log.error("Missing required env vars: %s", ", ".join(missing))
-        log.error("See the script header for usage.")
+        log.error("Missing credentials: %s", ", ".join(missing))
+        log.error("Options:")
+        log.error("  1. Place wazuh-install-files.tar in /root, /home/*, /tmp, or /var/tmp")
+        log.error("  2. Set env vars:  export %s=<password>", " ".join(missing))
         sys.exit(1)
 
 
