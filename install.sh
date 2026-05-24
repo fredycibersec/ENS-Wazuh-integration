@@ -30,7 +30,7 @@ echo ""
 
 [[ -d "$WAZUH_DIR" ]] || error "Wazuh directory not found at ${WAZUH_DIR}. Is Wazuh manager installed?"
 
-WAZUH_VERSION=$(${WAZUH_DIR}/bin/wazuh-control info 2>/dev/null | grep "Wazuh" | head -1 || true)
+WAZUH_VERSION=$(${WAZUH_DIR}/bin/wazuh-control info 2>/dev/null | grep "WAZUH" | head -1 || true)
 info "Detected Wazuh: ${WAZUH_VERSION:-unknown version}"
 
 MAJOR=$(echo "$WAZUH_VERSION" | grep -oP 'v\K[0-9]+' | head -1 || echo "0")
