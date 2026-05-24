@@ -86,9 +86,20 @@ def wazuh_get(token, path, params=None):
     return items
 
 
-def get_active_agents(token):
+def get_active_agents(token, include_manager=False):
     agents = wazuh_get(token, "/agents", {"status": "active"})
-    return [a for a in agents if a["id"] != "000"]
+    if not include_manager:
+        agents = [a for a in agents if a["id"] != "000"]
+    return agents
+
+
+def get_sca_policies(token, agent_id):
+    """Return the list of SCA policies available for an agent."""
+    try:
+        return wazuh_get(token, f"/sca/{agent_id}")
+    except Exception as exc:
+        log.warning("agent=%s — cannot fetch SCA policies: %s", agent_id, exc)
+        return []
 
 
 def get_sca_checks(token, agent_id, policy_id):
@@ -226,16 +237,79 @@ def check_env():
         sys.exit(1)
 
 
-def main(dry_run=False):
+def diagnose(token):
+    """Print a detailed report to help identify why 0 documents are indexed."""
+    print("\n── Diagnose ─────────────────────────────────────────────────────────")
+
+    # All agents including manager
+    all_agents = wazuh_get(token, "/agents", {"status": "active"})
+    print(f"\nActive agents (including manager): {len(all_agents)}")
+    for a in all_agents:
+        print(f"  id={a['id']:>3}  name={a.get('name','?'):<24} "
+              f"os={a.get('os',{}).get('platform','?'):<10} "
+              f"version={a.get('version','?')}")
+
+    agents_to_check = all_agents  # include 000 for diagnosis
+    if not agents_to_check:
+        print("\n  ✗ No active agents found — nothing to sync")
+        return
+
+    print(f"\nSearching for ENS policies: {ENS_POLICIES}")
+    print("\nSCA policies available per agent:")
+    found_any = False
+    for agent in agents_to_check:
+        aid  = agent["id"]
+        name = agent.get("name", aid)
+        policies = get_sca_policies(token, aid)
+        if not policies:
+            print(f"  agent={name} ({aid}) — no SCA policies found (scan not yet run?)")
+            continue
+        for p in policies:
+            pid   = p.get("policy_id", "?")
+            score = p.get("score", "?")
+            total = p.get("total_checks", "?")
+            match = "✔ MATCH" if pid in ENS_POLICIES else "  (not ENS)"
+            print(f"  agent={name:<24} policy_id={pid:<20} score={score}  checks={total}  {match}")
+            if pid in ENS_POLICIES:
+                found_any = True
+
+    if not found_any:
+        print("\n  ✗ No ENS policies found on any agent.")
+        print("    Possible causes:")
+        print("    1. The first SCA scan has not completed yet — wait or force one:")
+        print("       /var/ossec/bin/agent_control -r -u <agent_id>")
+        print("    2. The ENS policy files are not installed on the manager:")
+        print("       sudo bash install.sh")
+        print("    3. The ossec.conf <sca> block does not reference the ENS policies:")
+        print("       grep ens /var/ossec/etc/ossec.conf")
+        print("    4. Agent 000 (manager) runs SCA but is excluded from normal sync.")
+        print("       Re-run with --include-manager to also index manager checks.")
+    else:
+        print("\n  ✔ ENS policies found. If indexed=0, try --include-manager")
+        print("    or check that the agent is active and has completed at least one scan.")
+
+    print("─────────────────────────────────────────────────────────────────────\n")
+
+
+def main(dry_run=False, diagnose_mode=False, include_manager=False):
     check_env()
+
+    token = wazuh_token()
+
+    if diagnose_mode:
+        diagnose(token)
+        return
+
     log.info("Starting ENS SCA → OpenSearch sync (dry_run=%s)", dry_run)
 
     if not dry_run:
         ensure_index()
 
-    token  = wazuh_token()
-    agents = get_active_agents(token)
+    agents = get_active_agents(token, include_manager=include_manager)
     log.info("Active agents: %d", len(agents))
+
+    if not agents:
+        log.warning("No active agents found. Run with --diagnose for details.")
 
     ts   = datetime.now(timezone.utc).isoformat()
     docs = []
@@ -250,6 +324,9 @@ def main(dry_run=False):
                 docs.append((doc_id, doc))
             log.info("agent=%-20s policy=%-12s checks=%d",
                      agent.get("name", agent["id"]), policy_id, len(checks))
+
+    if not docs:
+        log.warning("0 documents built — run with --diagnose to identify the cause")
 
     if dry_run:
         log.info("DRY RUN — %d documents built, nothing indexed", len(docs))
@@ -266,5 +343,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ENS SCA → OpenSearch bridge")
     parser.add_argument("--dry-run", action="store_true",
                         help="Fetch data but do not write to OpenSearch")
+    parser.add_argument("--diagnose", action="store_true",
+                        help="Show agents, available SCA policies, and why 0 docs may occur")
+    parser.add_argument("--include-manager", action="store_true",
+                        help="Also sync SCA checks from the manager (agent 000)")
     args = parser.parse_args()
-    main(dry_run=args.dry_run)
+    main(dry_run=args.dry_run, diagnose_mode=args.diagnose,
+         include_manager=args.include_manager)
