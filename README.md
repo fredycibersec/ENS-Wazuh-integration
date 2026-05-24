@@ -146,24 +146,88 @@ sudo systemctl restart wazuh-manager
 
 ---
 
+## API Sync Tool (enhanced check-level dashboard)
+
+Wazuh 4.x only indexes SCA **summary** events into `wazuh-alerts-*` — individual check results are stored in SQLite on the manager and are only accessible via the Wazuh API. The sync tool bridges this gap by polling the API and indexing full check-level data into a dedicated `ens-sca-checks` OpenSearch index.
+
+### Setup
+
+```bash
+# Install dependency
+pip3 install requests
+
+# Configure credentials
+export WAZUH_USER=wazuh-wui
+export WAZUH_PASS=<wazuh-api-password>
+export OS_USER=admin
+export OS_PASS=<opensearch-password>
+
+# Optional overrides
+# export WAZUH_HOST=https://localhost:55000
+# export OS_HOST=https://localhost:9200
+# export OS_INDEX=ens-sca-checks
+# export ENS_POLICIES=ens_linux,ens_windows
+
+# Test run (no writes)
+python3 tools/sync_sca_to_opensearch.py --dry-run
+
+# Full sync
+python3 tools/sync_sca_to_opensearch.py
+```
+
+### Cron setup (recommended: every 15 minutes)
+
+Create `/etc/cron.d/ens-sca-sync`:
+
+```
+*/15 * * * * root \
+  WAZUH_PASS='changeme' OS_USER='admin' OS_PASS='changeme' \
+  /usr/bin/python3 /opt/ENS-Wazuh-integration/tools/sync_sca_to_opensearch.py \
+  >> /var/log/ens-sca-sync.log 2>&1
+```
+
+Or add to root's crontab (`crontab -e`):
+
+```
+*/15 * * * * WAZUH_PASS='changeme' OS_USER='admin' OS_PASS='changeme' /usr/bin/python3 /opt/ENS-Wazuh-integration/tools/sync_sca_to_opensearch.py >> /var/log/ens-sca-sync.log 2>&1
+```
+
+### Import the enhanced dashboard
+
+1. Open OpenSearch Dashboards → **Stack Management → Saved Objects → Import**
+2. Upload `dashboards/ens_sca_checks_dashboard.ndjson`
+3. Navigate to **Dashboards → ENS — SCA Check-Level Compliance**
+
+This dashboard provides:
+- Pass/Fail counts per ENS compliance level (Básico / Medio / Alto)
+- Compliance breakdown by agent
+- Top failing ENS controls
+- Full table of failed checks with remediation context
+
+---
+
 ## Project structure
 
 ```
 ENS-Wazuh-integration/
 ├── sca/
-│   ├── ens_linux.yml          # SCA policy for Linux agents
-│   └── ens_windows.yml        # SCA policy for Windows agents
+│   ├── ens_linux.yml                   # SCA policy for Linux agents
+│   └── ens_windows.yml                 # SCA policy for Windows agents
 ├── rules/
-│   └── ens_detection_rules.xml # Custom detection rules with ENS tags
+│   └── ens_detection_rules.xml         # Custom detection rules with ENS tags
 ├── dashboards/
-│   └── ens_dashboard.ndjson   # OpenSearch dashboard (import via UI)
+│   ├── ens_dashboard.ndjson            # Summary dashboard (wazuh-alerts-*)
+│   └── ens_sca_checks_dashboard.ndjson # Check-level dashboard (ens-sca-checks)
+├── tools/
+│   └── sync_sca_to_opensearch.py       # Wazuh API → OpenSearch bridge
 ├── docs/
-│   ├── controls_mapping.md    # Full ENS ↔ Wazuh mapping reference
-│   └── installation_guide.md  # Detailed installation guide
+│   ├── controls_mapping.md             # Full ENS ↔ Wazuh mapping reference
+│   └── installation_guide.md          # Detailed installation guide
 ├── tests/
-│   └── validate_sca.py        # SCA policy syntax validation script
-├── install.sh                 # Automated installer
-└── uninstall.sh               # Uninstaller
+│   ├── validate_sca.py                 # SCA policy syntax validation script
+│   └── diagnose_sca.sh                 # Diagnostic script for missing compliance fields
+├── install.sh                          # Automated installer
+└── uninstall.sh                        # Uninstaller
 ```
 
 ---
