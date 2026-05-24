@@ -245,21 +245,11 @@ By default, the SCA policies run on the Wazuh manager itself. To audit remote ag
 
 ### From the web UI
 
+The web UI does not support uploading arbitrary files to a group — SCA policy files must be copied via the CLI (see below). What you **can** do from the UI:
+
 1. **Management → Groups → Add new group** — name it `ens-linux`
-2. **Groups → ens-linux → Files → Upload file** — upload `sca/ens_linux.yml`
-3. **Groups → ens-linux → Edit group configuration** — add:
-
-```xml
-<agent_config>
-  <sca>
-    <policies>
-      <policy>etc/shared/ens_linux.yml</policy>
-    </policies>
-  </sca>
-</agent_config>
-```
-
-4. **Agents → select agent → Groups → Assign group → ens-linux**
+2. **Groups → ens-linux → Edit group configuration** — paste the `agent.conf` block (after copying the policy file via CLI)
+3. **Agents → select agent → Groups → Assign group → ens-linux**
 
 ### From the command line
 
