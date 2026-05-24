@@ -14,7 +14,8 @@ Community integration of the **Spanish National Security Framework (Esquema Naci
   <img width="900" alt="ENS Dashboard" src="https://github.com/user-attachments/assets/6a98315f-da6b-4e54-a4aa-c07e9fd6672b" />
   <img width="900" alt="SCA-ENS Dashboard" src="https://github.com/user-attachments/assets/6ea25533-2c2f-49e0-bac5-eda1cb3d2fad" />
 </p>
----
+
+
 
 ## What is ENS?
 
