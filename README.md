@@ -80,8 +80,8 @@ Add the following inside the `<sca>` block in `/var/ossec/etc/ossec.conf`:
   <interval>12h</interval>
   <skip_nfs>yes</skip_nfs>
   <policies>
-    <policy>etc/shared/ens_linux.yml</policy>
-    <policy>etc/shared/ens_windows.yml</policy>
+    <policy>ruleset/sca/ens_linux.yml</policy>
+    <policy>ruleset/sca/ens_windows.yml</policy>
   </policies>
 </sca>
 ```

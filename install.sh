@@ -69,7 +69,7 @@ else
   info "Adding ENS SCA policies to ossec.conf..."
   if grep -q "<sca>" "${OSSEC_CONF}"; then
     # Insert policy references inside existing <sca> block
-    sed -i "/<sca>/a\\    <policies>\\n      <policy>etc\/shared\/ens_linux.yml<\/policy>\\n      <policy>etc\/shared\/ens_windows.yml<\/policy>\\n    <\/policies>" "${OSSEC_CONF}"
+    sed -i "/<sca>/a\\    <policies>\\n      <policy>ruleset\/sca\/ens_linux.yml<\/policy>\\n      <policy>ruleset\/sca\/ens_windows.yml<\/policy>\\n    <\/policies>" "${OSSEC_CONF}"
     info "ENS policies added to existing <sca> block."
   else
     warn "No <sca> block found in ossec.conf. Please add the following manually:"
@@ -79,8 +79,8 @@ else
     echo "    <scan_on_start>yes</scan_on_start>"
     echo "    <interval>12h</interval>"
     echo "    <policies>"
-    echo "      <policy>etc/shared/ens_linux.yml</policy>"
-    echo "      <policy>etc/shared/ens_windows.yml</policy>"
+    echo "      <policy>ruleset/sca/ens_linux.yml</policy>"
+    echo "      <policy>ruleset/sca/ens_windows.yml</policy>"
     echo "    </policies>"
     echo "  </sca>"
     echo ""
