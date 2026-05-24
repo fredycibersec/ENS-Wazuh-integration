@@ -30,7 +30,6 @@ import json
 import logging
 import argparse
 import tarfile
-import re
 from datetime import datetime, timezone
 
 try:
@@ -68,46 +67,32 @@ def _read_passwords_from_tar(tar_path):
 
 def _extract_password(content, username):
     """
-    Parse a password for *username* from wazuh-passwords.txt content.
-    Supports all known Wazuh 4.x format variants:
-      A) api_username: 'X'  /  api_password: 'Y'   (Wazuh 4.7+ installer)
-      B) username: X        /  password: Y           (block, quotes optional)
-      C) The password for user 'X' is: Y             (inline sentence)
-      D) X: Y                                        (bare key-value)
+    Parse a password for *username* from wazuh-passwords.txt.
+
+    Handles Wazuh 4.x installer formats line by line:
+      api_username: 'X'  →  api_password: 'Y'
+      username: "X"      →  password: "Y"
+      username: X        →  password: Y
     """
-    def strip_q(s):
-        return s.strip().strip("\"'")
+    lines = content.splitlines()
+    user_keys = ("api_username:", "username:")
+    pass_keys = ("api_password:", "password:")
 
-    # Format A — api_username / api_password block (Wazuh 4.7+ all-in-one installer)
-    api_block = re.search(
-        rf"api_username:\s*[\"']?{re.escape(username)}[\"']?\s*\n"
-        rf"(?:.*\n){{0,2}}?api_password:\s*[\"']?(.+?)[\"']?\s*$",
-        content, re.MULTILINE,
-    )
-    if api_block:
-        return strip_q(api_block.group(1))
-
-    # Format B — username / password block
-    block = re.search(
-        rf"username:\s*[\"']?{re.escape(username)}[\"']?\s*\n"
-        rf"(?:.*\n){{0,2}}?password:\s*[\"']?(.+?)[\"']?\s*$",
-        content, re.MULTILINE,
-    )
-    if block:
-        return strip_q(block.group(1))
-
-    # Format C — inline sentence
-    sentence = re.search(
-        rf"['\"]?{re.escape(username)}['\"]?[^'\"\n]*?(?:is|password)[:\s]+['\"]?(.+?)['\"]?\s*$",
-        content, re.IGNORECASE | re.MULTILINE,
-    )
-    if sentence:
-        return strip_q(sentence.group(1))
-
-    # Format D — bare key: value
-    bare = re.search(rf"^{re.escape(username)}:\s+(.+)", content, re.MULTILINE)
-    if bare:
-        return strip_q(bare.group(1))
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        # Find lines that declare this username
+        for ukey in user_keys:
+            if not stripped.startswith(ukey):
+                continue
+            value = stripped[len(ukey):].strip().strip("\"'")
+            if value != username:
+                continue
+            # Found the username line — look for the password within the next 3 lines
+            for j in range(i + 1, min(i + 4, len(lines))):
+                pline = lines[j].strip()
+                for pkey in pass_keys:
+                    if pline.startswith(pkey):
+                        return pline[len(pkey):].strip().strip("\"'")
 
     return None
 
