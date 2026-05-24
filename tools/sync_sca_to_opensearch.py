@@ -43,7 +43,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # ── Credential auto-detection from wazuh-install-files.tar ────────────────────
 
-TAR_SEARCH_PATHS = ["/root", "/tmp", "/var/tmp"] + glob.glob("/home/*")
+# Base dirs to search — same set as install_sync.sh uses with find -maxdepth 2
+_TAR_BASE_DIRS = ["/root", "/home", "/tmp", "/var/tmp"]
 TAR_INTERNAL_PATHS = [
     "wazuh-install-files/wazuh-passwords.txt",
     "wazuh-passwords.txt",
@@ -99,11 +100,16 @@ def _extract_password(content, username):
 
 
 def _find_tar():
-    for directory in TAR_SEARCH_PATHS:
-        pattern = os.path.join(directory, "wazuh-install-files.tar")
-        matches = glob.glob(pattern)
-        if matches:
-            return matches[0]
+    # Mirror bash: find <dir> -maxdepth 2 -name wazuh-install-files.tar
+    # Glob patterns cover depth 0 (dir itself) and depth 1 (one subdir)
+    for base in _TAR_BASE_DIRS:
+        for pattern in (
+            os.path.join(base, "wazuh-install-files.tar"),
+            os.path.join(base, "*", "wazuh-install-files.tar"),
+        ):
+            matches = glob.glob(pattern)
+            if matches:
+                return matches[0]
     return None
 
 
