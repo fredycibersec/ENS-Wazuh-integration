@@ -74,27 +74,28 @@ def _extract_password(content, username):
       B) The password for user 'X' is: Y  (inline sentence)
       C) X: Y  (bare key-value)
     """
-    # Format A — multi-line block
+    # Format A — multi-line block (password may be on same or next line after username)
+    # Capture everything up to end-of-line; strip surrounding quotes afterward.
     block = re.search(
         rf"username:\s*[\"']?{re.escape(username)}[\"']?\s*\n"
-        rf"(?:.*\n){{0,2}}?password:\s*[\"']?(\S+?)[\"']?\s*$",
+        rf"(?:.*\n){{0,2}}?password:\s*[\"']?(.+?)[\"']?\s*$",
         content, re.MULTILINE,
     )
     if block:
-        return block.group(1)
+        return block.group(1).strip().strip("\"'")
 
     # Format B — inline sentence
     sentence = re.search(
-        rf"['\"]?{re.escape(username)}['\"]?[^'\"\n]*?(?:is|password)[:\s]+['\"]?(\S+?)['\"]?\s*$",
+        rf"['\"]?{re.escape(username)}['\"]?[^'\"\n]*?(?:is|password)[:\s]+['\"]?(.+?)['\"]?\s*$",
         content, re.IGNORECASE | re.MULTILINE,
     )
     if sentence:
-        return sentence.group(1)
+        return sentence.group(1).strip().strip("\"'")
 
-    # Format C — bare key: value
-    bare = re.search(rf"^{re.escape(username)}:\s+(\S+)", content, re.MULTILINE)
+    # Format C — bare key: value (rest of line, not just \S+)
+    bare = re.search(rf"^{re.escape(username)}:\s+(.+)", content, re.MULTILINE)
     if bare:
-        return bare.group(1)
+        return bare.group(1).strip().strip("\"'")
 
     return None
 
@@ -130,19 +131,24 @@ def load_credentials_from_tar():
     log.info("Reading credentials from %s", tar_path)
     creds = {}
 
-    wazuh_pass = _extract_password(content, "wazuh-wui")
-    if wazuh_pass:
-        creds["WAZUH_PASS"] = wazuh_pass
-        log.info("  wazuh-wui password: loaded from tar")
+    # Try wazuh-wui first (standard API UI user), fall back to wazuh
+    for api_user in ("wazuh-wui", "wazuh"):
+        wazuh_pass = _extract_password(content, api_user)
+        if wazuh_pass:
+            creds["WAZUH_PASS"] = wazuh_pass
+            creds["WAZUH_USER"] = api_user
+            log.info("  Wazuh API user/password: %s / %s***  (from tar)",
+                     api_user, wazuh_pass[:3])
+            break
     else:
-        log.warning("  wazuh-wui password: not found in tar (will need env var)")
+        log.warning("  Wazuh API password: not found in tar — set WAZUH_PASS env var")
 
     admin_pass = _extract_password(content, "admin")
     if admin_pass:
         creds["OS_PASS"] = admin_pass
-        log.info("  admin password: loaded from tar")
+        log.info("  OpenSearch admin password: %s***  (from tar)", admin_pass[:3])
     else:
-        log.warning("  admin password: not found in tar (will need env var)")
+        log.warning("  OpenSearch admin password: not found in tar — set OS_PASS env var")
 
     return creds
 
@@ -160,7 +166,7 @@ log = logging.getLogger("ens-sync")
 _tar_creds = load_credentials_from_tar()
 
 WAZUH_HOST   = os.getenv("WAZUH_HOST",   "https://localhost:55000")
-WAZUH_USER   = os.getenv("WAZUH_USER",   "wazuh-wui")
+WAZUH_USER   = os.getenv("WAZUH_USER",   _tar_creds.get("WAZUH_USER", "wazuh-wui"))
 WAZUH_PASS   = os.getenv("WAZUH_PASS",   _tar_creds.get("WAZUH_PASS", ""))
 OS_HOST      = os.getenv("OS_HOST",      "https://localhost:9200")
 OS_USER      = os.getenv("OS_USER",      "admin")
@@ -168,11 +174,6 @@ OS_PASS      = os.getenv("OS_PASS",      _tar_creds.get("OS_PASS", ""))
 OS_INDEX     = os.getenv("OS_INDEX",     "ens-sca-checks")
 ENS_POLICIES = os.getenv("ENS_POLICIES", "ens_linux,ens_windows").split(",")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)-8s %(message)s",
-    datefmt="%Y-%m-%dT%H:%M:%S",
-)
 log = logging.getLogger("ens-sync")
 
 # ── Wazuh API helpers ──────────────────────────────────────────────────────────
@@ -183,6 +184,13 @@ def wazuh_token():
         auth=(WAZUH_USER, WAZUH_PASS),
         verify=False, timeout=10,
     )
+    if r.status_code == 401:
+        log.error("Wazuh API authentication failed (401 Unauthorized)")
+        log.error("  Host: %s", WAZUH_HOST)
+        log.error("  User: %s", WAZUH_USER)
+        log.error("  Pass: %s***  (first 3 chars)", WAZUH_PASS[:3] if WAZUH_PASS else "(empty)")
+        log.error("Override with:  export WAZUH_USER=<user>  export WAZUH_PASS=<password>")
+        sys.exit(1)
     r.raise_for_status()
     return r.json()["data"]["token"]
 
