@@ -10,8 +10,9 @@ Community integration of the **Spanish National Security Framework (Esquema Naci
 > This is a community project maintained by a [Wazuh Ambassador](https://wazuh.com/community/ambassador-program/). It is not officially supported by Wazuh, Inc.
 
 ---
+<p align="center">
 <img width="900" alt="ENS-SCA" src="https://github.com/user-attachments/assets/e83ea480-5c2c-4d5f-a8c0-5f242303f243" />
-
+</p>
 
 ## What is ENS?
 
