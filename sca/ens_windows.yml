@@ -31,7 +31,7 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> MinimumPasswordLength -> n:^(\d+) compare >= 12'
+      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> MinimumPasswordLength -> r:^(1[2-9]|[2-9]\d|\d{3,})'
 
   - id: 31011
     title: "Ensure maximum password age is 90 days or less [op.acc.2] [Básico]"
@@ -43,7 +43,7 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> MaximumPasswordAge -> n:^(\d+) compare <= 90'
+      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> MaximumPasswordAge -> r:^([0-9]|[1-8][0-9]|90)$'
 
   # op.acc.6 — Mecanismo de autenticación
 
@@ -57,7 +57,7 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> LockoutBadCount -> n:^(\d+) compare <= 5'
+      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> LockoutBadCount -> r:^[0-5]$'
 
   - id: 31031
     title: "Ensure Windows Firewall is enabled for all profiles [op.mon.1] [Básico]"
@@ -111,7 +111,7 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Security -> Start -> n:^(\d+) compare <= 2'
+      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Security -> Start -> r:^[0-2]$'
 
   # mp.eq.2 — Bloqueo de puesto de trabajo
 
@@ -125,7 +125,7 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'r:HKCU\Control Panel\Desktop -> ScreenSaveTimeOut -> n:^(\d+) compare <= 900'
+      - 'r:HKCU\Control Panel\Desktop -> ScreenSaveTimeOut -> r:^([0-9]|[1-9][0-9]|[1-8][0-9][0-9]|900)$'
 
   # mp.sw.2 — Aceptación y puesta en servicio
 
@@ -139,4 +139,4 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'r:HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update -> AUOptions -> n:^(\d+) compare >= 3'
+      - 'r:HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update -> AUOptions -> r:^[3-9]$|^[1-9][0-9]+'
