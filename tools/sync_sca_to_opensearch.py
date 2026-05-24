@@ -70,32 +70,44 @@ def _extract_password(content, username):
     """
     Parse a password for *username* from wazuh-passwords.txt content.
     Supports all known Wazuh 4.x format variants:
-      A) username: X  /  password: Y   (block format, quotes optional)
-      B) The password for user 'X' is: Y  (inline sentence)
-      C) X: Y  (bare key-value)
+      A) api_username: 'X'  /  api_password: 'Y'   (Wazuh 4.7+ installer)
+      B) username: X        /  password: Y           (block, quotes optional)
+      C) The password for user 'X' is: Y             (inline sentence)
+      D) X: Y                                        (bare key-value)
     """
-    # Format A — multi-line block (password may be on same or next line after username)
-    # Capture everything up to end-of-line; strip surrounding quotes afterward.
+    def strip_q(s):
+        return s.strip().strip("\"'")
+
+    # Format A — api_username / api_password block (Wazuh 4.7+ all-in-one installer)
+    api_block = re.search(
+        rf"api_username:\s*[\"']?{re.escape(username)}[\"']?\s*\n"
+        rf"(?:.*\n){{0,2}}?api_password:\s*[\"']?(.+?)[\"']?\s*$",
+        content, re.MULTILINE,
+    )
+    if api_block:
+        return strip_q(api_block.group(1))
+
+    # Format B — username / password block
     block = re.search(
         rf"username:\s*[\"']?{re.escape(username)}[\"']?\s*\n"
         rf"(?:.*\n){{0,2}}?password:\s*[\"']?(.+?)[\"']?\s*$",
         content, re.MULTILINE,
     )
     if block:
-        return block.group(1).strip().strip("\"'")
+        return strip_q(block.group(1))
 
-    # Format B — inline sentence
+    # Format C — inline sentence
     sentence = re.search(
         rf"['\"]?{re.escape(username)}['\"]?[^'\"\n]*?(?:is|password)[:\s]+['\"]?(.+?)['\"]?\s*$",
         content, re.IGNORECASE | re.MULTILINE,
     )
     if sentence:
-        return sentence.group(1).strip().strip("\"'")
+        return strip_q(sentence.group(1))
 
-    # Format C — bare key: value (rest of line, not just \S+)
+    # Format D — bare key: value
     bare = re.search(rf"^{re.escape(username)}:\s+(.+)", content, re.MULTILINE)
     if bare:
-        return bare.group(1).strip().strip("\"'")
+        return strip_q(bare.group(1))
 
     return None
 
@@ -144,7 +156,7 @@ def load_credentials_from_tar():
             creds["WAZUH_PASS"] = wazuh_pass
             creds["WAZUH_USER"] = api_user
             log.info("  Wazuh API user/password: %s / %s***  (from tar)",
-                     api_user, wazuh_pass[:3])
+                     api_user, wazuh_pass[:6])
             break
     else:
         log.warning("  Wazuh API password: not found in tar — set WAZUH_PASS env var")
@@ -152,7 +164,7 @@ def load_credentials_from_tar():
     admin_pass = _extract_password(content, "admin")
     if admin_pass:
         creds["OS_PASS"] = admin_pass
-        log.info("  OpenSearch admin password: %s***  (from tar)", admin_pass[:3])
+        log.info("  OpenSearch admin password: %s***  (from tar)", admin_pass[:6])
     else:
         log.warning("  OpenSearch admin password: not found in tar — set OS_PASS env var")
 
