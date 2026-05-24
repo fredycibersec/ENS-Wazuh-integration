@@ -243,15 +243,45 @@ Panels included:
 
 By default, the SCA policies run on the Wazuh manager itself. To audit remote agents, deploy the policies via **Wazuh groups** — the manager pushes the files automatically to all agents in the group.
 
+### Automated script (recommended)
+
+```bash
+sudo bash deploy_sca_agents.sh
+```
+
+The script:
+1. Reads Wazuh API credentials from `wazuh-install-files.tar` automatically
+2. Queries the Wazuh API for all active agents and detects their OS
+3. Creates the `ens-linux` and `ens-windows` groups if they do not exist
+4. Copies the policy files to the group shared directories
+5. Writes the `agent.conf` for each group
+6. Assigns each agent to the correct group based on its OS
+
+Available flags:
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Show what would be done without making any changes |
+| `--force-scan` | Trigger an immediate SCA scan on all assigned agents |
+| `--no-assign` | Create groups and copy files only; skip agent assignment |
+
+```bash
+# Preview without changes
+sudo bash deploy_sca_agents.sh --dry-run
+
+# Deploy and force immediate scans
+sudo bash deploy_sca_agents.sh --force-scan
+```
+
 ### From the web UI
 
-The web UI does not support uploading arbitrary files to a group — SCA policy files must be copied via the CLI (see below). What you **can** do from the UI:
+The web UI does not support uploading arbitrary files to a group — SCA policy files must be copied via the CLI. What you **can** do from the UI:
 
 1. **Management → Groups → Add new group** — name it `ens-linux`
 2. **Groups → ens-linux → Edit group configuration** — paste the `agent.conf` block (after copying the policy file via CLI)
 3. **Agents → select agent → Groups → Assign group → ens-linux**
 
-### From the command line
+### From the command line (manual)
 
 ```bash
 # Create the group
@@ -420,6 +450,7 @@ ENS-Wazuh-integration/
 │   └── diagnose_sca.sh                 # Diagnostic script for missing compliance fields
 ├── install.sh                          # Phase 1: core installer
 ├── install_sync.sh                     # Phase 2: API sync installer
+├── deploy_sca_agents.sh                # Deploy SCA policies to agents via groups
 ├── uninstall.sh                        # Core uninstaller
 └── uninstall_sync.sh                   # Sync tool uninstaller
 ```
