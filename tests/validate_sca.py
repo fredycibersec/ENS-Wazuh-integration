@@ -4,6 +4,7 @@ Validate ENS Wazuh SCA policy files.
 Checks YAML syntax, required fields, check ID uniqueness, and compliance tags.
 """
 
+import re
 import sys
 import yaml
 import argparse
@@ -12,6 +13,31 @@ REQUIRED_POLICY_FIELDS = {"id", "file", "name", "description"}
 REQUIRED_CHECK_FIELDS = {"id", "title", "description", "compliance", "condition", "rules"}
 VALID_CONDITIONS = {"all", "any", "none"}
 VALID_ENS_LEVELS = {"Básico", "Medio", "Alto"}
+
+# Wazuh SCA uses POSIX ERE for Windows registry rules; these PCRE shorthands are not supported.
+_NON_POSIX_RE = re.compile(r'\\[dDwWsSbB]')
+# Windows registry rules start with r:HK (HKLM, HKCU, HKCC, HKCR, HKU)
+_WIN_REGISTRY_RULE_RE = re.compile(r'^!?r:HK', re.IGNORECASE)
+
+
+def _extract_rule_regex(rule: str) -> str | None:
+    """Return the regex portion of a Windows registry rule (after '-> r:' or '-> !r:')."""
+    m = re.search(r'->\s*!?r:(.+)$', rule)
+    return m.group(1) if m else None
+
+
+def validate_check_rules(check: dict, prefix: str, errors: list) -> None:
+    for rule in check.get("rules", []):
+        if not _WIN_REGISTRY_RULE_RE.match(rule.lstrip()):
+            continue
+        regex_part = _extract_rule_regex(rule)
+        if regex_part is None:
+            continue
+        for match in _NON_POSIX_RE.finditer(regex_part):
+            errors.append(
+                f"{prefix}: Non-POSIX regex shorthand '{match.group()}' in Windows registry rule "
+                f"(use POSIX equivalent, e.g. [0-9] for \\d): {rule!r}"
+            )
 
 
 def load_policy(path: str) -> dict:
@@ -40,6 +66,8 @@ def validate_policy(path: str, data: dict, errors: list, warnings: list) -> None
 
         if check.get("condition") not in VALID_CONDITIONS:
             errors.append(f"{prefix}: Invalid condition '{check.get('condition')}'")
+
+        validate_check_rules(check, prefix, errors)
 
         compliance = check.get("compliance", [])
         ens_controls = [c.get("ens") for c in compliance if "ens" in c]
