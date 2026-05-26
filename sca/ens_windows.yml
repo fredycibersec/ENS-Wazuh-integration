@@ -31,7 +31,7 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> MinimumPasswordLength -> r:^(1[2-9]|[2-9]\d|\d{3,})'
+      - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> MinimumPasswordLength -> r:^(1[2-9]|[2-9][0-9]|[0-9]{3,})'
 
   - id: 31011
     title: "Ensure maximum password age is 90 days or less [op.acc.2] [Básico]"
