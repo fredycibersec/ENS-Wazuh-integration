@@ -90,7 +90,7 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'f:$login_defs -> r:^\s*PASS_MIN_LEN\s+(1[2-9]|[2-9]\d|\d{3,})'
+      - 'f:$login_defs -> r:^[[:space:]]*PASS_MIN_LEN[[:space:]]+(1[2-9]|[2-9][0-9]|[0-9][0-9][0-9][0-9]*)'
 
   - id: 30011
     title: "Ensure password maximum age is 90 days or less [op.acc.2] [Básico]"
@@ -126,7 +126,7 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'f:$login_defs -> r:^\s*PASS_WARN_AGE\s+([7-9]|\d{2,})'
+      - 'f:$login_defs -> r:^[[:space:]]*PASS_WARN_AGE[[:space:]]+([7-9]|[0-9][0-9][0-9]*)'
 
   # op.acc.3 — Segregación de funciones
 
