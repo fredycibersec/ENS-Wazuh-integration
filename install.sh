@@ -49,8 +49,9 @@ info "Backup directory: ${BACKUP_DIR}"
 info "Installing SCA policies..."
 cp "${SCRIPT_DIR}/sca/ens_linux.yml" "${SCA_DIR}/"
 cp "${SCRIPT_DIR}/sca/ens_windows.yml" "${SCA_DIR}/"
-chown root:wazuh "${SCA_DIR}/ens_linux.yml" "${SCA_DIR}/ens_windows.yml"
-chmod 640 "${SCA_DIR}/ens_linux.yml" "${SCA_DIR}/ens_windows.yml"
+cp "${SCRIPT_DIR}/sca/ens_windows_remote.yml" "${SCA_DIR}/"
+chown root:wazuh "${SCA_DIR}/ens_linux.yml" "${SCA_DIR}/ens_windows.yml" "${SCA_DIR}/ens_windows_remote.yml"
+chmod 640 "${SCA_DIR}/ens_linux.yml" "${SCA_DIR}/ens_windows.yml" "${SCA_DIR}/ens_windows_remote.yml"
 info "SCA policies installed at ${SCA_DIR}/"
 
 # --- Install detection rules ---
@@ -69,7 +70,7 @@ else
   info "Adding ENS SCA policies to ossec.conf..."
   if grep -q "<sca>" "${OSSEC_CONF}"; then
     # Insert policy references inside existing <sca> block
-    sed -i "/<sca>/a\\    <policies>\\n      <policy>ruleset\/sca\/ens_linux.yml<\/policy>\\n      <policy>ruleset\/sca\/ens_windows.yml<\/policy>\\n    <\/policies>" "${OSSEC_CONF}"
+    sed -i "/<sca>/a\\    <policies>\\n      <policy>ruleset\/sca\/ens_linux.yml<\/policy>\\n      <policy>ruleset\/sca\/ens_windows.yml<\/policy>\\n      <policy>ruleset\/sca\/ens_windows_remote.yml<\/policy>\\n    <\/policies>" "${OSSEC_CONF}"
     info "ENS policies added to existing <sca> block."
   else
     warn "No <sca> block found in ossec.conf. Please add the following manually:"
@@ -81,8 +82,12 @@ else
     echo "    <policies>"
     echo "      <policy>ruleset/sca/ens_linux.yml</policy>"
     echo "      <policy>ruleset/sca/ens_windows.yml</policy>"
+    echo "      <policy>ruleset/sca/ens_windows_remote.yml</policy>"
     echo "    </policies>"
     echo "  </sca>"
+    echo ""
+    echo "  Note: ens_windows_remote.yml is skipped automatically if no snapshot"
+    echo "  file exists at /var/ossec/tmp/ens_windows_snapshot.cfg"
     echo ""
   fi
 fi
