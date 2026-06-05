@@ -78,6 +78,30 @@ checks:
     rules:
       - 'c:awk -F: "($3 < 1000 && $1 != \"root\" && $7 !~ /nologin|false/) {print $1}" /etc/passwd -> r:\w'
 
+  - id: 30005
+    title: "Ensure /etc/shadow permissions are 640 or more restrictive [op.acc.1] [Básico]"
+    description: "The /etc/shadow file must be owned by root and not world-readable."
+    rationale: "Password hashes in /etc/shadow must be accessible only to root. World-readable permissions allow offline password cracking."
+    remediation: "Run: chown root:shadow /etc/shadow && chmod 640 /etc/shadow"
+    compliance:
+      - ens: "op.acc.1"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:stat -c "%a %U" /etc/shadow -> r:^(640|600|000) root'
+
+  - id: 30006
+    title: "Ensure /etc/passwd permissions are 644 [op.acc.1] [Básico]"
+    description: "The /etc/passwd file must be owned by root with permissions 644."
+    rationale: "World-writable /etc/passwd allows any user to modify accounts or create privileged accounts."
+    remediation: "Run: chown root:root /etc/passwd && chmod 644 /etc/passwd"
+    compliance:
+      - ens: "op.acc.1"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:stat -c "%a %U" /etc/passwd -> r:^644 root'
+
   # op.acc.2 — Requisitos de acceso
 
   - id: 30010
@@ -128,6 +152,20 @@ checks:
     rules:
       - 'f:$login_defs -> r:^[[:space:]]*PASS_WARN_AGE[[:space:]]+([7-9]|[0-9][0-9][0-9]*)'
 
+  - id: 30014
+    title: "Ensure password complexity is enforced via pam_pwquality [op.acc.2] [Básico]"
+    description: "pam_pwquality must be configured with a minimum length of 12 and at least 3 character classes."
+    rationale: "login.defs PASS_MIN_LEN is ignored by PAM on modern distributions. pam_pwquality is the effective enforcement mechanism for ENS op.acc.2 password requirements."
+    remediation: "Set minlen=12 and minclass=3 in /etc/security/pwquality.conf and ensure pam_pwquality.so is active in /etc/pam.d/common-password or system-auth."
+    compliance:
+      - ens: "op.acc.2"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'f:/etc/security/pwquality.conf -> r:^\s*minlen\s*=\s*(1[2-9]|[2-9][0-9]|[0-9][0-9][0-9][0-9]*)'
+      - 'f:/etc/pam.d/common-password -> r:pam_pwquality.*minlen=(1[2-9]|[2-9][0-9]|[0-9][0-9][0-9][0-9]*)'
+      - 'f:/etc/pam.d/system-auth -> r:pam_pwquality.*minlen=(1[2-9]|[2-9][0-9]|[0-9][0-9][0-9][0-9]*)'
+
   # op.acc.3 — Segregación de funciones
 
   - id: 30020
@@ -154,6 +192,20 @@ checks:
     rules:
       - 'f:/etc/sudoers -> r:NOPASSWD'
       - 'd:/etc/sudoers.d -> r:NOPASSWD'
+
+  - id: 30022
+    title: "Ensure default umask is 027 or more restrictive [op.acc.3] [Básico]"
+    description: "The default file creation mask must be 027 or more restrictive (e.g. 077)."
+    rationale: "A permissive umask (e.g. 022) creates files readable by all users. ENS op.acc.3 requires that access to resources is granted with least privilege."
+    remediation: "Set UMASK 027 in /etc/login.defs and add 'umask 027' to /etc/profile or /etc/profile.d/umask.sh."
+    compliance:
+      - ens: "op.acc.3"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'f:$login_defs -> r:^\s*UMASK\s+(0?27|0?77)'
+      - 'f:/etc/profile -> r:^\s*umask\s+(0?27|0?77)'
+      - 'd:/etc/profile.d -> r:umask\s+(0?27|0?77)'
 
   # op.acc.6 — Mecanismo de autenticación (usuarios de la organización)
 
@@ -256,6 +308,18 @@ checks:
     rules:
       - 'f:$sshd_config -> r:^\s*X11Forwarding\s+no'
 
+  - id: 30042
+    title: "Ensure SSH agent forwarding is disabled [op.acc.7] [Medio]"
+    description: "SSH agent forwarding must be disabled on servers."
+    rationale: "Agent forwarding allows the remote server to use the local SSH agent, meaning a compromised server can use your keys to authenticate elsewhere."
+    remediation: "Set AllowAgentForwarding no in /etc/ssh/sshd_config and restart the SSH service."
+    compliance:
+      - ens: "op.acc.7"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:$sshd_config -> r:^\s*AllowAgentForwarding\s+no'
+
   ############################################################
   # op.exp — Explotación
   ############################################################
@@ -336,6 +400,44 @@ checks:
     condition: all
     rules:
       - 'c:sysctl net.ipv4.conf.all.accept_source_route -> r:net.ipv4.conf.all.accept_source_route\s*=\s*0'
+
+  - id: 30106
+    title: "Ensure /tmp is mounted with noexec, nosuid, and nodev [op.exp.2] [Básico]"
+    description: "The /tmp filesystem must be mounted with noexec, nosuid, and nodev options."
+    rationale: "Attackers commonly use /tmp to store and execute malicious binaries. noexec prevents execution, nosuid prevents privilege escalation via SUID binaries, nodev prevents device file creation."
+    remediation: "Add the options noexec,nosuid,nodev to the /tmp entry in /etc/fstab and remount: mount -o remount /tmp"
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:/proc/mounts -> r:\s/tmp\s.*noexec'
+      - 'f:/proc/mounts -> r:\s/tmp\s.*nosuid'
+      - 'f:/proc/mounts -> r:\s/tmp\s.*nodev'
+
+  - id: 30107
+    title: "Ensure ptrace scope is restricted [op.exp.2] [Básico]"
+    description: "The kernel.yama.ptrace_scope must be set to 1 or higher."
+    rationale: "ptrace allows a process to inspect the memory of another. Restricting it to parent processes prevents local privilege escalation and memory extraction attacks."
+    remediation: "Set kernel.yama.ptrace_scope = 1 in /etc/sysctl.conf and apply with: sysctl -p"
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl kernel.yama.ptrace_scope -> r:kernel.yama.ptrace_scope\s*=\s*[1-3]'
+
+  - id: 30108
+    title: "Ensure kernel log access is restricted to root [op.exp.2] [Medio]"
+    description: "The kernel.dmesg_restrict parameter must be set to 1."
+    rationale: "The kernel ring buffer (dmesg) can expose memory addresses and system internals useful for ASLR bypass. ENS op.exp.2 Medio requires hardened system configuration."
+    remediation: "Set kernel.dmesg_restrict = 1 in /etc/sysctl.conf and apply with: sysctl -p"
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'c:sysctl kernel.dmesg_restrict -> r:kernel.dmesg_restrict\s*=\s*1'
 
   # op.exp.6 — Protección frente a código dañino
 
@@ -427,6 +529,20 @@ checks:
     condition: all
     rules:
       - 'c:auditctl -l -> r:-w /usr/bin/sudo'
+
+  - id: 30126
+    title: "Ensure a time synchronization service is active [op.exp.8] [Básico]"
+    description: "A time synchronization daemon (chronyd, ntpd, or systemd-timesyncd) must be installed and running."
+    rationale: "Accurate timestamps are fundamental for audit log integrity and forensic correlation. ENS op.exp.8 requires reliable activity records."
+    remediation: "Install and enable chrony: apt install chrony && systemctl enable --now chronyd"
+    compliance:
+      - ens: "op.exp.8"
+      - ens_nivel: "Básico"
+    condition: any
+    rules:
+      - 'c:systemctl is-active chronyd -> r:^active'
+      - 'c:systemctl is-active ntpd -> r:^active'
+      - 'c:systemctl is-active systemd-timesyncd -> r:^active'
 
   # op.exp.10 — Protección de los registros de actividad
 
@@ -564,6 +680,42 @@ checks:
     rules:
       - 'c:sysctl net.ipv6.conf.all.accept_ra -> r:net.ipv6.conf.all.accept_ra\s*=\s*0'
 
+  - id: 30323
+    title: "Ensure reverse path filtering is enabled [mp.com.4] [Básico]"
+    description: "Reverse path source validation must be enabled (rp_filter = 1)."
+    rationale: "Reverse path filtering drops packets whose source address does not match the interface they arrived on, mitigating IP spoofing attacks."
+    remediation: "Set net.ipv4.conf.all.rp_filter = 1 in /etc/sysctl.conf and apply with: sysctl -p"
+    compliance:
+      - ens: "mp.com.4"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl net.ipv4.conf.all.rp_filter -> r:net.ipv4.conf.all.rp_filter\s*=\s*1'
+
+  - id: 30324
+    title: "Ensure ICMP broadcast requests are ignored [mp.com.4] [Básico]"
+    description: "The system must not respond to ICMP broadcast echo requests (Smurf amplification)."
+    rationale: "Responding to broadcast ICMP requests can amplify DoS attacks. ENS mp.s.3 and mp.com.4 require protection against network-level attacks."
+    remediation: "Set net.ipv4.icmp_echo_ignore_broadcasts = 1 in /etc/sysctl.conf and apply with: sysctl -p"
+    compliance:
+      - ens: "mp.com.4"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl net.ipv4.icmp_echo_ignore_broadcasts -> r:net.ipv4.icmp_echo_ignore_broadcasts\s*=\s*1'
+
+  - id: 30325
+    title: "Ensure bogus ICMP responses are logged [mp.com.4] [Básico]"
+    description: "Martian packets (packets with impossible source addresses) must be logged."
+    rationale: "Logging martian packets helps detect IP spoofing and network scanning attempts, supporting ENS op.exp.8 activity monitoring requirements."
+    remediation: "Set net.ipv4.conf.all.log_martians = 1 in /etc/sysctl.conf and apply with: sysctl -p"
+    compliance:
+      - ens: "mp.com.4"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'c:sysctl net.ipv4.conf.all.log_martians -> r:net.ipv4.conf.all.log_martians\s*=\s*1'
+
   ############################################################
   # mp.eq — Protección de los equipos
   ############################################################
@@ -640,6 +792,21 @@ checks:
     rules:
       - 'c:dpkg -s rsh-client -> r:Status: install ok installed'
       - 'c:rpm -q rsh -> r:^rsh-'
+
+  - id: 30602
+    title: "Ensure FTP server is not installed [mp.s.2] [Básico]"
+    description: "FTP server software (vsftpd, proftpd) must not be installed."
+    rationale: "FTP transmits credentials and data in cleartext. ENS mp.s.2 requires that only secure, necessary services are available."
+    remediation: "Remove FTP servers: apt remove vsftpd proftpd / yum remove vsftpd proftpd"
+    compliance:
+      - ens: "mp.s.2"
+      - ens_nivel: "Básico"
+    condition: none
+    rules:
+      - 'c:rpm -q vsftpd -> r:^vsftpd-'
+      - 'c:dpkg -s vsftpd -> r:Status: install ok installed'
+      - 'c:rpm -q proftpd -> r:^proftpd-'
+      - 'c:dpkg -s proftpd -> r:Status: install ok installed'
 
   ############################################################
   # mp.sw — Protección de las aplicaciones informáticas

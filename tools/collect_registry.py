@@ -66,6 +66,34 @@ REGISTRY_QUERIES = [
     # 31700
     ("AUOptions",
      "HKLM", r"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update", "AUOptions"),
+
+    # 31032 - NLA for RDP
+    ("RDP.UserAuthentication",
+     "HKLM", r"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp", "UserAuthentication"),
+    # 31033 - WDigest disabled
+    ("WDigest.UseLogonCredential",
+     "HKLM", r"SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest", "UseLogonCredential"),
+    # 31034 - UAC consent level
+    ("UAC.ConsentPromptBehaviorAdmin",
+     "HKLM", r"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System", "ConsentPromptBehaviorAdmin"),
+    # 31102 - SMBv1 disabled
+    ("LanmanServer.SMB1",
+     "HKLM", r"SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters", "SMB1"),
+    # 31121 - PowerShell Script Block Logging
+    ("PowerShell.ScriptBlockLogging",
+     "HKLM", r"SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging", "EnableScriptBlockLogging"),
+    # 31035 - LSASS Protected Process Light (Medio)
+    ("LSA.RunAsPPL",
+     "HKLM", r"SYSTEM\CurrentControlSet\Control\Lsa", "RunAsPPL"),
+    # 31036 - Virtualization Based Security / Credential Guard (Medio)
+    ("DeviceGuard.EnableVBS",
+     "HKLM", r"SYSTEM\CurrentControlSet\Control\DeviceGuard", "EnableVirtualizationBasedSecurity"),
+    # 31302 - RDP minimum encryption level (Medio)
+    ("RDP.MinEncryptionLevel",
+     "HKLM", r"SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp", "MinEncryptionLevel"),
+    # 31200 - Windows Time service sync type
+    ("W32Time.Type",
+     "HKLM", r"SYSTEM\CurrentControlSet\Services\W32Time\Parameters", "Type"),
 ]
 
 NOT_FOUND = "__NOT_FOUND__"

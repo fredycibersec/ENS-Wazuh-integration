@@ -143,4 +143,124 @@ checks:
       - ens_nivel: "Básico"
     condition: all
     rules:
-      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:AUOptions=(\d+) compare >= 3'
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:AUOptions=([0-9]+) compare >= 3'
+
+  # op.acc.6 — Mecanismo de autenticación (cont.)
+
+  - id: 31032
+    title: "Ensure Network Level Authentication is required for RDP [op.acc.6] [Básico]"
+    description: "Remote Desktop connections must require NLA before the session is established."
+    rationale: "NLA authenticates the user before the RDP session is created, preventing pre-authentication attacks and reducing the attack surface."
+    remediation: "Set UserAuthentication to 1 via Group Policy: Computer Configuration → Administrative Templates → Windows Components → Remote Desktop Services → Require NLA."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:RDP\.UserAuthentication=1'
+
+  - id: 31033
+    title: "Ensure WDigest authentication is disabled [op.acc.6] [Básico]"
+    description: "WDigest must be disabled to prevent plaintext credential storage in LSASS memory."
+    rationale: "WDigest causes Windows to cache cleartext credentials in memory, enabling credential dumping. ENS op.acc.6 requires secure authentication mechanisms."
+    remediation: "Set UseLogonCredential to 0 under HKLM\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\WDigest."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:WDigest\.UseLogonCredential=0'
+
+  # op.acc.3 — Segregación de funciones (cont.)
+
+  - id: 31034
+    title: "Ensure UAC prompts administrators for consent or credentials [op.acc.3] [Básico]"
+    description: "User Account Control must prompt for consent (2) or credentials (1) when elevating privileges."
+    rationale: "ENS op.acc.3 requires segregation of functions. UAC prevents privilege escalation without explicit approval."
+    remediation: "Set ConsentPromptBehaviorAdmin to 1 or 2 via Local Security Policy → Security Options → User Account Control."
+    compliance:
+      - ens: "op.acc.3"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:UAC\.ConsentPromptBehaviorAdmin=[12]'
+
+  # op.exp.2 — Configuración de seguridad (cont.)
+
+  - id: 31102
+    title: "Ensure SMBv1 protocol is disabled [op.exp.2] [Básico]"
+    description: "The SMBv1 protocol must be disabled on the system."
+    rationale: "SMBv1 contains critical vulnerabilities including EternalBlue (MS17-010). ENS op.exp.2 requires secure system configuration."
+    remediation: "Set SMB1 to 0 under HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters, or run: Set-SmbServerConfiguration -EnableSMB1Protocol $false"
+    compliance:
+      - ens: "op.exp.2"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:LanmanServer\.SMB1=0'
+
+  # op.exp.8 — Registro de actividad (cont.)
+
+  - id: 31121
+    title: "Ensure PowerShell Script Block Logging is enabled [op.exp.8] [Básico]"
+    description: "PowerShell script block logging must capture all executed script blocks."
+    rationale: "Script block logging records executed PowerShell code and is essential for detecting obfuscated malicious scripts. ENS op.exp.8 requires user activity logging."
+    remediation: "Enable via Group Policy: Computer Configuration → Administrative Templates → Windows Components → Windows PowerShell → Turn on PowerShell Script Block Logging."
+    compliance:
+      - ens: "op.exp.8"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:PowerShell\.ScriptBlockLogging=1'
+
+  - id: 31200
+    title: "Ensure Windows Time service syncs from a valid time source [op.exp.8] [Básico]"
+    description: "The W32Time service must be configured to use NTP, NT5DS, or AllSync as time source."
+    rationale: "Accurate timestamps are required for audit log integrity. ENS op.exp.8 mandates reliable activity records that depend on synchronized time."
+    remediation: "Configure W32Time: w32tm /config /manualpeerlist:<ntp-server> /syncfromflags:manual /reliable:YES /update"
+    compliance:
+      - ens: "op.exp.8"
+      - ens_nivel: "Básico"
+    condition: all
+    rules:
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:W32Time\.Type=(NTP|NT5DS|AllSync)'
+
+  # op.acc.6 — Nivel Medio
+
+  - id: 31035
+    title: "Ensure LSASS runs as Protected Process Light [op.acc.6] [Medio]"
+    description: "LSASS must be configured as a Protected Process Light (PPL) to prevent credential dumping."
+    rationale: "PPL prevents unprotected processes from reading LSASS memory, blocking tools like Mimikatz."
+    remediation: "Set RunAsPPL to 1 under HKLM\\SYSTEM\\CurrentControlSet\\Control\\Lsa."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:LSA\.RunAsPPL=1'
+
+  - id: 31036
+    title: "Ensure Virtualization Based Security is enabled [op.acc.6] [Medio]"
+    description: "Virtualization Based Security (VBS) must be enabled to support Credential Guard."
+    rationale: "VBS uses hardware virtualization to isolate credential storage from the OS kernel, preventing credential theft even when the kernel is compromised."
+    remediation: "Enable via Group Policy: Computer Configuration → Administrative Templates → System → Device Guard → Turn On Virtualization Based Security."
+    compliance:
+      - ens: "op.acc.6"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:DeviceGuard\.EnableVBS=1'
+
+  # mp.com.2 — Protección de la confidencialidad (cont.)
+
+  - id: 31302
+    title: "Ensure RDP uses High or FIPS encryption [mp.com.2] [Medio]"
+    description: "Remote Desktop connections must use High (3) or FIPS-compliant (4) encryption level."
+    rationale: "ENS mp.com.2 requires confidentiality of communications. Low or client-compatible RDP encryption can be downgraded by an attacker."
+    remediation: "Set MinEncryptionLevel to 3 or 4 via Group Policy or registry under RDP-Tcp."
+    compliance:
+      - ens: "mp.com.2"
+      - ens_nivel: "Medio"
+    condition: all
+    rules:
+      - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:RDP\.MinEncryptionLevel=([0-9]+) compare >= 3'

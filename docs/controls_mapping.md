@@ -2,32 +2,32 @@
 
 Full reference mapping between ENS (Real Decreto 311/2022) controls and Wazuh SCA checks and detection rules.
 
-| ENS Control | Description | Level | SCA Check IDs | Rule IDs | Type |
-|-------------|-------------|-------|---------------|----------|------|
-| **op.acc.1** | Identificación | Básico | 30001, 30002, 30003, 30004 | 100200, 100201 | SCA + Rules |
-| **op.acc.2** | Requisitos de acceso | Básico | 30010, 30011, 30012, 30013 | 100210 | SCA + Rules |
-| **op.acc.3** | Segregación de funciones | Básico | 30020, 30021 | 100220, 100221 | SCA + Rules |
-| **op.acc.4** | Gestión de derechos de acceso | Básico | — | 100230–100233 | Rules |
-| **op.acc.6** | Autenticación (usuarios org.) | Básico | 30030–30035 | 100200, 100201, 100202, 100203 | SCA + Rules |
-| **op.acc.7** | Acceso remoto | Medio | 30040, 30041 | — | SCA |
-| **op.exp.2** | Configuración de seguridad | Básico | 30100–30105 | — | SCA |
-| **op.exp.3** | Gestión de la configuración | Básico | — | 100300, 100301, 100302 | Rules |
-| **op.exp.5** | Gestión de cambios | Básico | — | 100300, 100301 | Rules |
-| **op.exp.6** | Protección frente a código dañino | Básico | 30110 | 100310 | SCA + Rules |
-| **op.exp.7** | Gestión de incidentes | Básico | — | 100320, 100321 | Rules |
-| **op.exp.8** | Registro de actividad de usuarios | Básico | 30120–30125 | 100330, 100331 | SCA + Rules |
-| **op.exp.9** | Registro de gestión de incidentes | Básico | — | 100320 | Rules |
-| **op.exp.10** | Protección de registros | Medio | 30123, 30130, 30131 | 100331, 100340 | SCA + Rules |
-| **op.mon.1** | Detección de intrusión | Básico | 30200, 30201 | 100400, 100401 | SCA + Rules |
-| **mp.com.2** | Protección de la confidencialidad | Medio | 30300, 30301 | 100500 | SCA + Rules |
-| **mp.com.3** | Autenticidad e integridad | Básico | 30310 | 100202, 100500 | SCA + Rules |
-| **mp.com.4** | Segregación de redes | Básico | 30320, 30321, 30322 | — | SCA |
-| **mp.eq.2** | Bloqueo de puesto de trabajo | Básico | 30400 | — | SCA |
-| **mp.info.3** | Cifrado de la información | Medio | 30500 | — | SCA |
-| **mp.info.9** | Copias de seguridad | Básico | 30510 | — | SCA |
-| **mp.s.2** | Protección de servicios web | Básico | 30600, 30601 | 100600, 100601 | SCA + Rules |
-| **mp.s.3** | Protección frente a DoS | Básico | 30320 | — | SCA |
-| **mp.sw.2** | Aceptación y puesta en servicio | Básico | 30700 | — | SCA |
+| ENS Control | Description | Level | SCA Check IDs (Linux) | SCA Check IDs (Windows) | Rule IDs | Type |
+|-------------|-------------|-------|-----------------------|-------------------------|----------|------|
+| **op.acc.1** | Identificación | Básico | 30001–30006 | — | 100200, 100201 | SCA + Rules |
+| **op.acc.2** | Requisitos de acceso | Básico | 30010–30014 | 31010, 31011 | 100210 | SCA + Rules |
+| **op.acc.3** | Segregación de funciones | Básico | 30020–30022 | 31034 | 100220, 100221 | SCA + Rules |
+| **op.acc.4** | Gestión de derechos de acceso | Básico | — | — | 100230–100233 | Rules |
+| **op.acc.6** | Autenticación (usuarios org.) | Básico/Medio | 30030–30035 | 31030, 31032, 31033, 31035, 31036 | 100200–100203 | SCA + Rules |
+| **op.acc.7** | Acceso remoto | Medio | 30040–30042 | — | — | SCA |
+| **op.exp.2** | Configuración de seguridad | Básico/Medio | 30100–30108 | 31102 | — | SCA |
+| **op.exp.3** | Gestión de la configuración | Básico | — | — | 100300–100302 | Rules |
+| **op.exp.5** | Gestión de cambios | Básico | — | — | 100300, 100301 | Rules |
+| **op.exp.6** | Protección frente a código dañino | Básico | 30110 | 31100, 31101 | 100310 | SCA + Rules |
+| **op.exp.7** | Gestión de incidentes | Básico | — | — | 100320, 100321 | Rules |
+| **op.exp.8** | Registro de actividad de usuarios | Básico/Medio | 30120–30126 | 31120, 31121, 31200 | 100330, 100331 | SCA + Rules |
+| **op.exp.9** | Registro de gestión de incidentes | Básico | — | — | 100320 | Rules |
+| **op.exp.10** | Protección de registros | Medio | 30123, 30130, 30131 | — | 100331, 100340 | SCA + Rules |
+| **op.mon.1** | Detección de intrusión | Básico | 30200, 30201 | 31031 | 100400, 100401 | SCA + Rules |
+| **mp.com.2** | Protección de la confidencialidad | Medio | 30300, 30301 | 31302 | 100500 | SCA + Rules |
+| **mp.com.3** | Autenticidad e integridad | Básico | 30310 | — | 100202, 100500 | SCA + Rules |
+| **mp.com.4** | Segregación de redes | Básico | 30320–30325 | — | — | SCA |
+| **mp.eq.2** | Bloqueo de puesto de trabajo | Básico | 30400 | 31400 | — | SCA |
+| **mp.info.3** | Cifrado de la información | Medio | 30500 | — | — | SCA |
+| **mp.info.9** | Copias de seguridad | Básico | 30510 | — | — | SCA |
+| **mp.s.2** | Protección de servicios web | Básico | 30600–30602 | — | 100600, 100601 | SCA + Rules |
+| **mp.s.3** | Protección frente a DoS | Básico | 30320, 30324 | — | — | SCA |
+| **mp.sw.2** | Aceptación y puesta en servicio | Básico | 30700 | 31700 | — | SCA |
 
 ## Controls requiring manual evidence
 
