@@ -8,6 +8,16 @@
   Each rule also carries an ISO27001_<control> group with the equivalent
   ISO/IEC 27001:2022 Annex A control, derived from docs/iso27001_mapping.md.
 
+  Each ISO27001_<control> group is paired with a lowercase iso_27001_<control>
+  token, matching the naming convention Wazuh's own bundled ruleset uses for
+  other frameworks (e.g. pci_dss_11.4, gdpr_IV_35.7.d, tsc_CC6.1 in
+  ruleset/rules/0095-sshd_rules.xml) — added defensively in case a future
+  Wazuh dashboard release enriches compliance fields from that pattern. Not
+  confirmed to have any effect today; kept purely as a low-cost hedge.
+  Note: Wazuh's own native ISO 27001 module (added via wazuh-dashboard-
+  plugins#8286) uses ISO/IEC 27001:2013 numbering internally (A.5-A.18), not
+  the 2022 numbering (5.x-8.x) used here — see docs/iso27001_mapping.md.
+
   ENS Control families covered:
     op.acc  — Access control
     op.exp  — Operations / exploitation
@@ -30,25 +40,25 @@
   <rule id="100200" level="5">
     <if_sid>5501</if_sid>
     <description>ENS op.acc.1/op.acc.6: SSH authentication failure</description>
-    <group>ENS_op.acc.1,ENS_op.acc.6,authentication_failure,ISO27001_5.16,ISO27001_8.5,</group>
+    <group>ENS_op.acc.1,ENS_op.acc.6,authentication_failure,ISO27001_5.16,iso_27001_5.16,ISO27001_8.5,iso_27001_8.5,</group>
   </rule>
 
   <rule id="100201" level="3">
     <if_sid>5715</if_sid>
     <description>ENS op.acc.1/op.acc.6: SSH authentication success</description>
-    <group>ENS_op.acc.1,ENS_op.acc.6,authentication_success,ISO27001_5.16,ISO27001_8.5,</group>
+    <group>ENS_op.acc.1,ENS_op.acc.6,authentication_success,ISO27001_5.16,iso_27001_5.16,ISO27001_8.5,iso_27001_8.5,</group>
   </rule>
 
   <rule id="100202" level="10">
     <if_sid>5712</if_sid>
     <description>ENS op.acc.6: SSH reverse mapping failed (possible spoofing)</description>
-    <group>ENS_op.acc.6,ENS_mp.com.3,ISO27001_8.5,ISO27001_8.24,</group>
+    <group>ENS_op.acc.6,ENS_mp.com.3,ISO27001_8.5,iso_27001_8.5,ISO27001_8.24,iso_27001_8.24,</group>
   </rule>
 
   <rule id="100203" level="10">
     <if_sid>5710</if_sid>
     <description>ENS op.acc.6: SSH insecure connection attempt</description>
-    <group>ENS_op.acc.6,ISO27001_8.5,</group>
+    <group>ENS_op.acc.6,ISO27001_8.5,iso_27001_8.5,</group>
   </rule>
 
   <!-- ============================================================
@@ -59,7 +69,7 @@
   <rule id="100210" level="7">
     <if_sid>5551, 5552, 5553</if_sid>
     <description>ENS op.acc.2: Password change or policy event</description>
-    <group>ENS_op.acc.2,account_changed,ISO27001_5.15,</group>
+    <group>ENS_op.acc.2,account_changed,ISO27001_5.15,iso_27001_5.15,</group>
   </rule>
 
   <!-- ============================================================
@@ -70,13 +80,13 @@
   <rule id="100220" level="5">
     <if_sid>5401</if_sid>
     <description>ENS op.acc.3: Successful sudo privilege escalation</description>
-    <group>ENS_op.acc.3,privilege_escalation,ISO27001_5.3,</group>
+    <group>ENS_op.acc.3,privilege_escalation,ISO27001_5.3,iso_27001_5.3,</group>
   </rule>
 
   <rule id="100221" level="9">
     <if_sid>5402</if_sid>
     <description>ENS op.acc.3: Failed sudo attempt — unauthorized privilege escalation</description>
-    <group>ENS_op.acc.3,privilege_escalation,ISO27001_5.3,</group>
+    <group>ENS_op.acc.3,privilege_escalation,ISO27001_5.3,iso_27001_5.3,</group>
   </rule>
 
   <!-- ============================================================
@@ -87,25 +97,25 @@
   <rule id="100230" level="8">
     <if_sid>5901</if_sid>
     <description>ENS op.acc.4: New user account created</description>
-    <group>ENS_op.acc.4,account_changed,ISO27001_5.18,</group>
+    <group>ENS_op.acc.4,account_changed,ISO27001_5.18,iso_27001_5.18,</group>
   </rule>
 
   <rule id="100231" level="8">
     <if_sid>5902</if_sid>
     <description>ENS op.acc.4: User account deleted</description>
-    <group>ENS_op.acc.4,account_changed,ISO27001_5.18,</group>
+    <group>ENS_op.acc.4,account_changed,ISO27001_5.18,iso_27001_5.18,</group>
   </rule>
 
   <rule id="100232" level="7">
     <if_sid>5903</if_sid>
     <description>ENS op.acc.4: User account modified</description>
-    <group>ENS_op.acc.4,account_changed,ISO27001_5.18,</group>
+    <group>ENS_op.acc.4,account_changed,ISO27001_5.18,iso_27001_5.18,</group>
   </rule>
 
   <rule id="100233" level="9">
     <if_sid>5905</if_sid>
     <description>ENS op.acc.4: User added to privileged group</description>
-    <group>ENS_op.acc.4,ENS_op.acc.3,account_changed,ISO27001_5.18,ISO27001_5.3,</group>
+    <group>ENS_op.acc.4,ENS_op.acc.3,account_changed,ISO27001_5.18,iso_27001_5.18,ISO27001_5.3,iso_27001_5.3,</group>
   </rule>
 
   <!-- ============================================================
@@ -117,20 +127,20 @@
   <rule id="100300" level="7">
     <if_sid>550</if_sid>
     <description>ENS op.exp.3: Integrity checksum changed on monitored file</description>
-    <group>ENS_op.exp.3,ENS_op.exp.5,fim_change,ISO27001_8.9,ISO27001_8.32,</group>
+    <group>ENS_op.exp.3,ENS_op.exp.5,fim_change,ISO27001_8.9,iso_27001_8.9,ISO27001_8.32,iso_27001_8.32,</group>
   </rule>
 
   <rule id="100301" level="7">
     <if_sid>554</if_sid>
     <description>ENS op.exp.3: New file added to monitored directory</description>
-    <group>ENS_op.exp.3,ENS_op.exp.5,fim_change,ISO27001_8.9,ISO27001_8.32,</group>
+    <group>ENS_op.exp.3,ENS_op.exp.5,fim_change,ISO27001_8.9,iso_27001_8.9,ISO27001_8.32,iso_27001_8.32,</group>
   </rule>
 
   <rule id="100302" level="12">
     <if_sid>550</if_sid>
     <match>/etc/passwd|/etc/shadow|/etc/sudoers|/etc/ssh/sshd_config</match>
     <description>ENS op.exp.3/op.acc: Critical system file modified</description>
-    <group>ENS_op.exp.3,ENS_op.acc.1,ENS_op.acc.6,fim_change,ISO27001_8.9,ISO27001_5.16,ISO27001_8.5,</group>
+    <group>ENS_op.exp.3,ENS_op.acc.1,ENS_op.acc.6,fim_change,ISO27001_8.9,iso_27001_8.9,ISO27001_5.16,iso_27001_5.16,ISO27001_8.5,iso_27001_8.5,</group>
   </rule>
 
   <!-- ============================================================
@@ -141,7 +151,7 @@
   <rule id="100310" level="12">
     <if_sid>510, 511, 512, 513</if_sid>
     <description>ENS op.exp.6: Rootkit or malware detected</description>
-    <group>ENS_op.exp.6,malware,ISO27001_8.7,</group>
+    <group>ENS_op.exp.6,malware,ISO27001_8.7,iso_27001_8.7,</group>
   </rule>
 
   <!-- ============================================================
@@ -153,13 +163,13 @@
   <rule id="100320" level="12">
     <if_sid>40101</if_sid>
     <description>ENS op.exp.7: Multiple authentication failures — possible brute force incident</description>
-    <group>ENS_op.exp.7,ENS_op.exp.9,brute_force,ISO27001_5.26,ISO27001_5.28,</group>
+    <group>ENS_op.exp.7,ENS_op.exp.9,brute_force,ISO27001_5.26,iso_27001_5.26,ISO27001_5.28,iso_27001_5.28,</group>
   </rule>
 
   <rule id="100321" level="10">
     <if_sid>40111</if_sid>
     <description>ENS op.exp.7: Authentication failures from multiple sources</description>
-    <group>ENS_op.exp.7,ENS_op.acc.6,brute_force,ISO27001_5.26,ISO27001_8.5,</group>
+    <group>ENS_op.exp.7,ENS_op.acc.6,brute_force,ISO27001_5.26,iso_27001_5.26,ISO27001_8.5,iso_27001_8.5,</group>
   </rule>
 
   <!-- ============================================================
@@ -170,13 +180,13 @@
   <rule id="100330" level="3">
     <if_sid>80700, 80701, 80702, 80703</if_sid>
     <description>ENS op.exp.8: Audit log event recorded</description>
-    <group>ENS_op.exp.8,audit_log,ISO27001_8.15,</group>
+    <group>ENS_op.exp.8,audit_log,ISO27001_8.15,iso_27001_8.15,</group>
   </rule>
 
   <rule id="100331" level="12">
     <if_sid>80711</if_sid>
     <description>ENS op.exp.8/op.exp.10: Audit daemon stopped — logging interrupted</description>
-    <group>ENS_op.exp.8,ENS_op.exp.10,ISO27001_8.15,</group>
+    <group>ENS_op.exp.8,ENS_op.exp.10,ISO27001_8.15,iso_27001_8.15,</group>
   </rule>
 
   <!-- ============================================================
@@ -188,7 +198,7 @@
     <if_sid>591, 592</if_sid>
     <match>/var/log</match>
     <description>ENS op.exp.10: Log file deleted or truncated</description>
-    <group>ENS_op.exp.10,fim_change,ISO27001_8.15,</group>
+    <group>ENS_op.exp.10,fim_change,ISO27001_8.15,iso_27001_8.15,</group>
   </rule>
 
   <!-- ============================================================
@@ -199,13 +209,13 @@
   <rule id="100400" level="10">
     <if_sid>40501</if_sid>
     <description>ENS op.mon.1: Port scan detected</description>
-    <group>ENS_op.mon.1,network_scan,ISO27001_8.16,</group>
+    <group>ENS_op.mon.1,network_scan,ISO27001_8.16,iso_27001_8.16,</group>
   </rule>
 
   <rule id="100401" level="9">
     <if_sid>5104</if_sid>
     <description>ENS op.mon.1: New remote connection established</description>
-    <group>ENS_op.mon.1,ISO27001_8.16,</group>
+    <group>ENS_op.mon.1,ISO27001_8.16,iso_27001_8.16,</group>
   </rule>
 
   <!-- ============================================================
@@ -217,7 +227,7 @@
   <rule id="100500" level="9">
     <if_sid>5716</if_sid>
     <description>ENS mp.com.2: Weak SSH cipher or protocol used</description>
-    <group>ENS_mp.com.2,ENS_op.acc.6,ISO27001_8.24,ISO27001_8.5,</group>
+    <group>ENS_mp.com.2,ENS_op.acc.6,ISO27001_8.24,iso_27001_8.24,ISO27001_8.5,iso_27001_8.5,</group>
   </rule>
 
   <!-- ============================================================
@@ -228,13 +238,13 @@
   <rule id="100600" level="8">
     <if_sid>502</if_sid>
     <description>ENS mp.s.2: System service started unexpectedly</description>
-    <group>ENS_mp.s.2,service_change,ISO27001_8.26,</group>
+    <group>ENS_mp.s.2,service_change,ISO27001_8.26,iso_27001_8.26,</group>
   </rule>
 
   <rule id="100601" level="8">
     <if_sid>503</if_sid>
     <description>ENS mp.s.2: System service stopped unexpectedly</description>
-    <group>ENS_mp.s.2,service_change,ISO27001_8.26,</group>
+    <group>ENS_mp.s.2,service_change,ISO27001_8.26,iso_27001_8.26,</group>
   </rule>
 
 </group>

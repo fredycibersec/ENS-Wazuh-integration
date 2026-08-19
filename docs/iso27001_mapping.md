@@ -36,6 +36,25 @@ implementing the ISO control does not automatically satisfy the ENS measure
 (or vice versa) at every compliance level; treat it as a cross-reference to
 avoid duplicated audit effort, not a substitute for the ENS Anexo II text.
 
+## Compatibility note: Wazuh's own native ISO 27001 module uses 2013 numbering
+
+Wazuh added a native "ISO 27001" module to its dashboard
+([wazuh-dashboard-plugins#8286](https://github.com/wazuh/wazuh-dashboard-plugins/pull/8286)),
+independent of this project. Its control catalog
+(`plugins/main/common/compliance-requirements/iso27001-requirements.ts`) and
+the `iso_27001` tags on Wazuh's own bundled SCA policies for third-party
+software (nginx, mysql, apache, mongodb, sqlserver, iis, oracle, postgres,
+macOS, debian, sles) use **ISO/IEC 27001:2013** numbering (`A.5`–`A.18`, e.g.
+`A.9.2.1`), not the **2022** numbering (`5`–`8`, e.g. `5.16`) used throughout
+this file and this project's `iso_27001` compliance tags. That module also
+only reads `rule.compliance.iso_27001` from detection-rule alerts — it never
+looks at SCA check data, so it does not conflict with or duplicate this
+project's SCA-level tagging.
+
+If you ever run this project alongside Wazuh's native module on the same
+installation, expect to see two differently-numbered "ISO 27001" views —
+that is a real version difference, not a bug in either one.
+
 ## Controls with automated SCA checks / detection rules
 
 These are the ENS controls this project already audits via SCA policies

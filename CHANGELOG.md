@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+- `docs/iso27001_mapping.md`: compatibility note documenting that Wazuh's own native ISO 27001 module (`wazuh-dashboard-plugins#8286`) uses ISO/IEC 27001:2013 numbering internally, while this project uses 2022 — flagged so the two don't get confused if run side by side.
+- `rules/ens_detection_rules.xml`: each `ISO27001_<control>` group is now paired with a lowercase `iso_27001_<control>` token, matching the naming convention Wazuh's own bundled ruleset uses for other frameworks (`pci_dss_11.4`, `gdpr_IV_35.7.d`, `tsc_CC6.1`, ...). Purely additive, low-cost hedge in case a future Wazuh dashboard release enriches compliance fields from that pattern — not confirmed to have any effect today.
+
 ### Fixed
 - Removed 6 pre-existing panels from `ens_dashboard.ndjson` (`ens-viz-by-level`, `ens-viz-top-failing`, `ens-viz-sca-by-family`, `ens-viz-compliance-pct-bar`, `ens-viz-control-detail-table`, `ens-viz-agent-control-table`) that queried `data.sca.type: check` against `wazuh-alerts-*`. Wazuh only writes an individual check event there on the first scan or on a pass/fail state change — never a full snapshot — so these panels showed sparse, inconsistent data depending on the selected time range (regression from an earlier fix in this same history; see commit `6206583`). The main dashboard now only uses `data.sca.type: summary` and detection-rule alerts, both of which Wazuh indexes reliably.
 - Per-control compliance detail (for both ENS and the new ISO 27001:2022 tagging) is now exclusively in `ens_sca_checks_dashboard.ndjson` (Phase 2), which is fed a full snapshot on every run by `tools/sync_sca_to_opensearch.py` and does not have the sparsity problem above.
