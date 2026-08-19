@@ -72,6 +72,7 @@ def validate_policy(path: str, data: dict, errors: list, warnings: list) -> None
         compliance = check.get("compliance", [])
         ens_controls = [c.get("ens") for c in compliance if "ens" in c]
         ens_levels = [c.get("ens_nivel") for c in compliance if "ens_nivel" in c]
+        iso_controls = [c.get("iso_27001") for c in compliance if "iso_27001" in c]
 
         if not ens_controls:
             warnings.append(f"{prefix}: No 'ens' compliance tag defined")
@@ -82,6 +83,9 @@ def validate_policy(path: str, data: dict, errors: list, warnings: list) -> None
             for level in ens_levels:
                 if level not in VALID_ENS_LEVELS:
                     errors.append(f"{prefix}: Invalid ens_nivel '{level}'. Must be one of {VALID_ENS_LEVELS}")
+
+        if not iso_controls:
+            warnings.append(f"{prefix}: No 'iso_27001' compliance tag defined")
 
 
 def check_duplicates(files: list[str]) -> list[str]:

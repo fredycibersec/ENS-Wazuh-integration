@@ -2,6 +2,8 @@
 
 Full reference mapping between ENS (Real Decreto 311/2022) controls and Wazuh SCA checks and detection rules.
 
+Every check and rule below is also tagged with its equivalent ISO/IEC 27001:2022 Annex A control — see [`iso27001_mapping.md`](iso27001_mapping.md) for the full ENS ↔ ISO 27001 correspondence table and the `compliance.iso_27001` / `ISO27001_<control>` filters.
+
 | ENS Control | Description | Level | SCA Check IDs (Linux) | SCA Check IDs (Windows) | Rule IDs | Type |
 |-------------|-------------|-------|-----------------------|-------------------------|----------|------|
 | **op.acc.1** | Identificación | Básico | 30001–30006 | — | 100200, 100201 | SCA + Rules |
@@ -55,13 +57,23 @@ The following ENS controls cannot be automatically audited by Wazuh and require 
 
 ## Level filter reference
 
-To filter checks by ENS compliance level in OpenSearch:
+To filter checks by ENS compliance level in OpenSearch, query the `ens-sca-checks`
+index (populated by `tools/sync_sca_to_opensearch.py` — see README Phase 2):
 
-- **Básico**: `data.sca.check.compliance.ens_nivel: "Básico"`
-- **Medio**: `data.sca.check.compliance.ens_nivel: "Medio" OR "Básico"`
+- **Básico**: `ens.check.compliance.ens_nivel: "Básico"`
+- **Medio**: `ens.check.compliance.ens_nivel: "Medio" OR "Básico"`
 - **Alto**: all checks (Básico + Medio + Alto)
 
-For detection rules, filter by group:
+> **Do not filter on `data.sca.check.compliance.*` in `wazuh-alerts-*`.** Wazuh
+> only writes an individual check event there on the first scan and on a
+> pass/fail state change — never a full snapshot — so those fields return
+> sparse, incomplete results. Only `data.sca.type: summary` (score/passed/failed
+> per policy) is reliably available in `wazuh-alerts-*`; per-control detail
+> requires the `ens-sca-checks` index. See [`iso27001_mapping.md`](iso27001_mapping.md#filtering-by-iso-27001-in-opensearch).
+
+For detection rules, filter by group (these alert normally, so `wazuh-alerts-*`
+is fine here):
 - `rule.groups: ENS_op.acc.*`
 - `rule.groups: ENS_op.exp.*`
 - `rule.groups: ENS_mp.*`
+- `rule.groups: ISO27001_5.*` / `ISO27001_8.*` (equivalent ISO 27001:2022 groups)

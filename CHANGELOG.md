@@ -2,7 +2,17 @@
 
 ## [Unreleased]
 
+### Fixed
+- Removed 6 pre-existing panels from `ens_dashboard.ndjson` (`ens-viz-by-level`, `ens-viz-top-failing`, `ens-viz-sca-by-family`, `ens-viz-compliance-pct-bar`, `ens-viz-control-detail-table`, `ens-viz-agent-control-table`) that queried `data.sca.type: check` against `wazuh-alerts-*`. Wazuh only writes an individual check event there on the first scan or on a pass/fail state change — never a full snapshot — so these panels showed sparse, inconsistent data depending on the selected time range (regression from an earlier fix in this same history; see commit `6206583`). The main dashboard now only uses `data.sca.type: summary` and detection-rule alerts, both of which Wazuh indexes reliably.
+- Per-control compliance detail (for both ENS and the new ISO 27001:2022 tagging) is now exclusively in `ens_sca_checks_dashboard.ndjson` (Phase 2), which is fed a full snapshot on every run by `tools/sync_sca_to_opensearch.py` and does not have the sparsity problem above.
+- `tools/sync_sca_to_opensearch.py`: added `iso_27001` to the `ens-sca-checks` index mapping as `keyword`.
+- `tests/validate_sca.py`: warns if a check is missing the `iso_27001` compliance tag.
+
 ### Added
+- ENS ↔ ISO/IEC 27001:2022 controls mapping (`docs/iso27001_mapping.md`), covering both automated and manual-evidence ENS controls
+- `iso_27001` compliance tag added to all 96 SCA checks (`ens_linux.yml`, `ens_windows.yml`, `ens_windows_remote.yml`), alongside the existing `ens`/`ens_nivel` tags
+- `ISO27001_<control>` groups added to all 25 tagged detection rules in `ens_detection_rules.xml`, alongside the existing `ENS_<control>` groups
+- `ens_sca_checks_dashboard.ndjson` (Phase 2 check-level dashboard): ENS and ISO 27001:2022 compliance % by control, per-control detail table, per-agent drill-down for both frameworks, and an ENS↔ISO 27001 crosswalk table validated against live check data
 - Initial SCA policy for Linux (`ens_linux.yml`) with 40+ checks covering op.acc, op.exp, op.mon, mp.com, mp.eq, mp.info, mp.s, mp.sw
 - Initial SCA policy for Windows (`ens_windows.yml`) with baseline checks
 - Detection rules (`ens_detection_rules.xml`) mapping existing Wazuh events to ENS controls

@@ -33,6 +33,7 @@ checks:
     compliance:
       - ens: "op.acc.2"
       - ens_nivel: "Básico"
+      - iso_27001: "5.15"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:MinimumPasswordLength=(\d+) compare >= 12'
@@ -45,6 +46,7 @@ checks:
     compliance:
       - ens: "op.acc.2"
       - ens_nivel: "Básico"
+      - iso_27001: "5.15"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:MaximumPasswordAge=(\d+) compare <= 90'
@@ -59,6 +61,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:LockoutBadCount=(\d+) compare <= 5'
@@ -71,6 +74,7 @@ checks:
     compliance:
       - ens: "op.mon.1"
       - ens_nivel: "Básico"
+      - iso_27001: "8.16"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:EnableFirewall\.Domain=1'
@@ -87,6 +91,7 @@ checks:
     compliance:
       - ens: "op.exp.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.7"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:DisableAntiSpyware=0'
@@ -99,6 +104,7 @@ checks:
     compliance:
       - ens: "op.exp.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.7"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:DisableRealtimeMonitoring=0'
@@ -113,6 +119,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:EventLog\.Security\.Start=(\d+) compare <= 2'
@@ -127,6 +134,7 @@ checks:
     compliance:
       - ens: "mp.eq.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.1"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:ScreenSaveTimeOut=(\d+) compare <= 900'
@@ -141,6 +149,7 @@ checks:
     compliance:
       - ens: "mp.sw.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.29"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:AUOptions=([0-9]+) compare >= 3'
@@ -155,6 +164,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:RDP\.UserAuthentication=1'
@@ -167,6 +177,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:WDigest\.UseLogonCredential=0'
@@ -181,6 +192,7 @@ checks:
     compliance:
       - ens: "op.acc.3"
       - ens_nivel: "Básico"
+      - iso_27001: "5.3"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:UAC\.ConsentPromptBehaviorAdmin=[12]'
@@ -195,6 +207,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.9"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:LanmanServer\.SMB1=0'
@@ -209,6 +222,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:PowerShell\.ScriptBlockLogging=1'
@@ -221,6 +235,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:W32Time\.Type=(NTP|NT5DS|AllSync)'
@@ -235,6 +250,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Medio"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:LSA\.RunAsPPL=1'
@@ -247,6 +263,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Medio"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> r:DeviceGuard\.EnableVBS=1'
@@ -261,6 +278,7 @@ checks:
     compliance:
       - ens: "mp.com.2"
       - ens_nivel: "Medio"
+      - iso_27001: "8.24"
     condition: all
     rules:
       - 'f:/var/ossec/tmp/ens_windows_snapshot.cfg -> n:RDP\.MinEncryptionLevel=([0-9]+) compare >= 3'

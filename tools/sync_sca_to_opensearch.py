@@ -314,8 +314,9 @@ INDEX_MAPPING = {
                             "remediation": {"type": "text"},
                             "compliance": {
                                 "properties": {
-                                    "ens":       {"type": "keyword"},
-                                    "ens_nivel": {"type": "keyword"},
+                                    "ens":        {"type": "keyword"},
+                                    "ens_nivel":  {"type": "keyword"},
+                                    "iso_27001":  {"type": "keyword"},
                                 }
                             },
                         }

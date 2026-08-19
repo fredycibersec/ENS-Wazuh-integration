@@ -38,6 +38,7 @@ ENS covers three control families: **[org]** Organizational, **[op]** Operationa
 | **SCA Policies** | YAML policies for Linux and Windows agents that audit system configuration against ENS controls |
 | **Detection Rules** | Custom Wazuh rules tagged with ENS control references |
 | **Control Mapping** | Full reference table mapping ENS controls to Wazuh checks and rules |
+| **ISO 27001 Mapping** | Every SCA check and detection rule is also tagged with its equivalent ISO/IEC 27001:2022 Annex A control ([docs/iso27001_mapping.md](docs/iso27001_mapping.md)) |
 | **Dashboards** | OpenSearch dashboards for ENS compliance visualization |
 | **API Sync Tool** | Bridge script that indexes check-level SCA data into a dedicated OpenSearch index for rich dashboards |
 
@@ -117,7 +118,7 @@ sudo cp rules/ens_detection_rules.xml /var/ossec/etc/rules/
 3. Upload `dashboards/ens_dashboard.ndjson`
 4. Navigate to **Dashboards → ENS — Esquema Nacional de Seguridad**
 
-> **Note:** The NDJSON uses the `wazuh-alerts-*` index pattern that Wazuh creates automatically.
+> **Note:** The NDJSON uses the `wazuh-alerts-*` index pattern that Wazuh creates automatically. It only shows policy-level scores and detection-rule alerts — data Wazuh reliably indexes on its own. Per-control compliance detail (which specific ENS/ISO 27001 controls pass or fail, and on which agents) requires Phase 2 below, because Wazuh does not index a full snapshot of individual check results into `wazuh-alerts-*` (see the note in Phase 2).
 
 #### 5. Restart Wazuh manager
 
@@ -129,7 +130,7 @@ sudo systemctl restart wazuh-manager
 
 ## Phase 2 — API Sync Tool (check-level dashboard)
 
-Wazuh 4.x only indexes SCA **summary** events into `wazuh-alerts-*`. Individual check results (pass/fail per control) are stored in SQLite on the manager and accessible only via the Wazuh REST API. The sync tool bridges this gap by polling the API and indexing full check-level data into a dedicated `ens-sca-checks` OpenSearch index.
+Wazuh 4.x only indexes SCA **summary** events into `wazuh-alerts-*`. Individual check events (`data.sca.type: check`) are only written there on the first scan or when a check's result changes between scans — never a full snapshot — and are otherwise stored in SQLite on the manager, accessible only via the Wazuh REST API. A dashboard panel that queries `data.sca.check.*` in `wazuh-alerts-*` will therefore show sparse, inconsistent data that depends on the time range picked, not the real current state. The sync tool bridges this gap by polling the API and indexing a full, up-to-date check-level snapshot into a dedicated `ens-sca-checks` OpenSearch index on every run — this is the only reliable source for per-control compliance (ENS and ISO/IEC 27001:2022), which is why those panels live in this phase's dashboard, not in the Phase 1 summary dashboard.
 
 ### Automated
 
@@ -239,6 +240,13 @@ Panels included:
 | Compliance by agent | Per-agent pass/fail breakdown |
 | Top failing controls | ENS controls with most failures |
 | Failed checks table | Full list with title, level, agent, remediation |
+| ENS compliance % by control | Stacked % passed/failed per ENS control |
+| ENS control detail table | Control → nivel → resultado → agentes únicos + checks |
+| ENS compliance by agent × control | Drill-down: equipo → control ENS → resultado |
+| ISO 27001 compliance % by control | Stacked % passed/failed per ISO/IEC 27001:2022 control |
+| ISO 27001 control detail table | Control → resultado → agentes únicos + checks |
+| ISO 27001 compliance by agent × control | Drill-down: equipo → control ISO 27001 → resultado |
+| ENS ↔ ISO 27001 crosswalk | Control ENS → control ISO 27001 → resultado, from live data (validates `docs/iso27001_mapping.md`) |
 
 ---
 
@@ -396,29 +404,31 @@ sudo bash tests/diagnose_sca.sh admin <opensearch-password>
 
 ## ENS Controls Coverage
 
+Every row below is also tagged with its ISO/IEC 27001:2022 Annex A equivalent — see [docs/iso27001_mapping.md](docs/iso27001_mapping.md) for the full ENS ↔ ISO 27001 crosswalk, including the controls that require manual evidence.
+
 ### Automated (SCA + Rules)
 
-| Family | Control | Description | Level |
-|--------|---------|-------------|-------|
-| op.acc | op.acc.1 | Identification | Básico |
-| op.acc | op.acc.2 | Access requirements | Básico |
-| op.acc | op.acc.3 | Segregation of duties | Básico |
-| op.acc | op.acc.6 | Authentication (org users) | Básico |
-| op.acc | op.acc.7 | Remote access | Medio |
-| op.exp | op.exp.2 | Security configuration | Básico |
-| op.exp | op.exp.6 | Malware protection | Básico |
-| op.exp | op.exp.8 | User activity logging | Básico |
-| op.exp | op.exp.10 | Log protection | Medio |
-| op.mon | op.mon.1 | Intrusion detection | Básico |
-| mp.com | mp.com.2 | Confidentiality | Medio |
-| mp.com | mp.com.3 | Authenticity/integrity | Básico |
-| mp.com | mp.com.4 | Network segregation | Básico |
-| mp.eq | mp.eq.2 | Workstation lock | Básico |
-| mp.info | mp.info.3 | Information encryption | Medio |
-| mp.info | mp.info.9 | Backups | Básico |
-| mp.s | mp.s.2 | Service protection | Básico |
-| mp.s | mp.s.3 | DoS protection | Básico |
-| mp.sw | mp.sw.2 | Software acceptance | Básico |
+| Family | Control | Description | Level | ISO 27001:2022 |
+|--------|---------|-------------|-------|-----------------|
+| op.acc | op.acc.1 | Identification | Básico | 5.16 |
+| op.acc | op.acc.2 | Access requirements | Básico | 5.15 |
+| op.acc | op.acc.3 | Segregation of duties | Básico | 5.3 |
+| op.acc | op.acc.6 | Authentication (org users) | Básico | 8.5 |
+| op.acc | op.acc.7 | Remote access | Medio | 6.7 |
+| op.exp | op.exp.2 | Security configuration | Básico | 8.9 |
+| op.exp | op.exp.6 | Malware protection | Básico | 8.7 |
+| op.exp | op.exp.8 | User activity logging | Básico | 8.15 |
+| op.exp | op.exp.10 | Log protection | Medio | 8.15 |
+| op.mon | op.mon.1 | Intrusion detection | Básico | 8.16 |
+| mp.com | mp.com.2 | Confidentiality | Medio | 8.24 |
+| mp.com | mp.com.3 | Authenticity/integrity | Básico | 8.24 |
+| mp.com | mp.com.4 | Network segregation | Básico | 8.22 |
+| mp.eq | mp.eq.2 | Workstation lock | Básico | 8.1 |
+| mp.info | mp.info.3 | Information encryption | Medio | 8.24 |
+| mp.info | mp.info.9 | Backups | Básico | 8.13 |
+| mp.s | mp.s.2 | Service protection | Básico | 8.26 |
+| mp.s | mp.s.3 | DoS protection | Básico | 8.6 |
+| mp.sw | mp.sw.2 | Software acceptance | Básico | 8.29 |
 
 ### Requires manual evidence
 
@@ -447,6 +457,7 @@ ENS-Wazuh-integration/
 │   └── sync_sca_to_opensearch.py       # Wazuh API → OpenSearch bridge
 ├── docs/
 │   ├── controls_mapping.md             # Full ENS ↔ Wazuh mapping reference
+│   ├── iso27001_mapping.md             # ENS ↔ ISO/IEC 27001:2022 controls crosswalk
 │   └── installation_guide.md          # Detailed installation guide
 ├── tests/
 │   ├── validate_sca.py                 # SCA policy syntax validation script

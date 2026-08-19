@@ -38,6 +38,7 @@ checks:
     compliance:
       - ens: "op.acc.1"
       - ens_nivel: "Básico"
+      - iso_27001: "5.16"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*PermitRootLogin\s+no'
@@ -50,6 +51,7 @@ checks:
     compliance:
       - ens: "op.acc.1"
       - ens_nivel: "Básico"
+      - iso_27001: "5.16"
     condition: none
     rules:
       - 'c:awk -F: "seen[$3]++{print $1}" /etc/passwd -> r:\w'
@@ -62,6 +64,7 @@ checks:
     compliance:
       - ens: "op.acc.1"
       - ens_nivel: "Básico"
+      - iso_27001: "5.16"
     condition: none
     rules:
       - 'c:awk -F: "seen[$1]++{print $1}" /etc/passwd -> r:\w'
@@ -74,6 +77,7 @@ checks:
     compliance:
       - ens: "op.acc.1"
       - ens_nivel: "Básico"
+      - iso_27001: "5.16"
     condition: none
     rules:
       - 'c:awk -F: "($3 < 1000 && $1 != \"root\" && $7 !~ /nologin|false/) {print $1}" /etc/passwd -> r:\w'
@@ -86,6 +90,7 @@ checks:
     compliance:
       - ens: "op.acc.1"
       - ens_nivel: "Básico"
+      - iso_27001: "5.16"
     condition: all
     rules:
       - 'c:stat -c "%a %U" /etc/shadow -> r:^(640|600|000) root'
@@ -98,6 +103,7 @@ checks:
     compliance:
       - ens: "op.acc.1"
       - ens_nivel: "Básico"
+      - iso_27001: "5.16"
     condition: all
     rules:
       - 'c:stat -c "%a %U" /etc/passwd -> r:^644 root'
@@ -112,6 +118,7 @@ checks:
     compliance:
       - ens: "op.acc.2"
       - ens_nivel: "Básico"
+      - iso_27001: "5.15"
     condition: all
     rules:
       - 'f:$login_defs -> r:^[[:space:]]*PASS_MIN_LEN[[:space:]]+(1[2-9]|[2-9][0-9]|[0-9][0-9][0-9][0-9]*)'
@@ -124,6 +131,7 @@ checks:
     compliance:
       - ens: "op.acc.2"
       - ens_nivel: "Básico"
+      - iso_27001: "5.15"
     condition: all
     rules:
       - 'f:$login_defs -> r:^\s*PASS_MAX_DAYS\s+([1-8]\d|90)\s*$'
@@ -136,6 +144,7 @@ checks:
     compliance:
       - ens: "op.acc.2"
       - ens_nivel: "Básico"
+      - iso_27001: "5.15"
     condition: all
     rules:
       - 'f:$login_defs -> r:^\s*PASS_MIN_DAYS\s+[1-9]'
@@ -148,6 +157,7 @@ checks:
     compliance:
       - ens: "op.acc.2"
       - ens_nivel: "Básico"
+      - iso_27001: "5.15"
     condition: all
     rules:
       - 'f:$login_defs -> r:^[[:space:]]*PASS_WARN_AGE[[:space:]]+([7-9]|[0-9][0-9][0-9]*)'
@@ -160,6 +170,7 @@ checks:
     compliance:
       - ens: "op.acc.2"
       - ens_nivel: "Básico"
+      - iso_27001: "5.15"
     condition: any
     rules:
       - 'f:/etc/security/pwquality.conf -> r:^\s*minlen\s*=\s*(1[2-9]|[2-9][0-9]|[0-9][0-9][0-9][0-9]*)'
@@ -176,6 +187,7 @@ checks:
     compliance:
       - ens: "op.acc.3"
       - ens_nivel: "Básico"
+      - iso_27001: "5.3"
     condition: all
     rules:
       - 'c:sudo -V -> r:Sudo version'
@@ -188,6 +200,7 @@ checks:
     compliance:
       - ens: "op.acc.3"
       - ens_nivel: "Básico"
+      - iso_27001: "5.3"
     condition: none
     rules:
       - 'f:/etc/sudoers -> r:NOPASSWD'
@@ -201,6 +214,7 @@ checks:
     compliance:
       - ens: "op.acc.3"
       - ens_nivel: "Básico"
+      - iso_27001: "5.3"
     condition: any
     rules:
       - 'f:$login_defs -> r:^\s*UMASK\s+(0?27|0?77)'
@@ -217,6 +231,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*MaxAuthTries\s+[1-4]\s*$'
@@ -229,6 +244,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*ClientAliveInterval\s+[1-9]'
@@ -242,6 +258,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*PermitEmptyPasswords\s+no'
@@ -254,6 +271,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*HostbasedAuthentication\s+no'
@@ -266,6 +284,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*Banner\s+'
@@ -278,6 +297,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Medio"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*KexAlgorithms\s+'
@@ -292,6 +312,7 @@ checks:
     compliance:
       - ens: "op.acc.7"
       - ens_nivel: "Medio"
+      - iso_27001: "6.7"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*AllowTcpForwarding\s+no'
@@ -304,6 +325,7 @@ checks:
     compliance:
       - ens: "op.acc.7"
       - ens_nivel: "Medio"
+      - iso_27001: "6.7"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*X11Forwarding\s+no'
@@ -316,6 +338,7 @@ checks:
     compliance:
       - ens: "op.acc.7"
       - ens_nivel: "Medio"
+      - iso_27001: "6.7"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*AllowAgentForwarding\s+no'
@@ -334,6 +357,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.9"
     condition: any
     rules:
       - 'c:rpm -q aide -> r:^aide-'
@@ -347,6 +371,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.9"
     condition: all
     rules:
       - 'c:sysctl kernel.randomize_va_space -> r:kernel.randomize_va_space\s*=\s*2'
@@ -359,6 +384,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.9"
     condition: all
     rules:
       - 'c:sysctl fs.suid_dumpable -> r:fs.suid_dumpable\s*=\s*0'
@@ -371,6 +397,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Medio"
+      - iso_27001: "8.9"
     condition: any
     rules:
       - 'c:sestatus -> r:SELinux status:\s+enabled'
@@ -385,6 +412,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.9"
     condition: all
     rules:
       - 'c:sysctl net.ipv4.ip_forward -> r:net.ipv4.ip_forward\s*=\s*0'
@@ -397,6 +425,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.9"
     condition: all
     rules:
       - 'c:sysctl net.ipv4.conf.all.accept_source_route -> r:net.ipv4.conf.all.accept_source_route\s*=\s*0'
@@ -409,6 +438,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.9"
     condition: all
     rules:
       - 'f:/proc/mounts -> r:\s/tmp\s.*noexec'
@@ -423,6 +453,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.9"
     condition: all
     rules:
       - 'c:sysctl kernel.yama.ptrace_scope -> r:kernel.yama.ptrace_scope\s*=\s*[1-3]'
@@ -435,6 +466,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Medio"
+      - iso_27001: "8.9"
     condition: all
     rules:
       - 'c:sysctl kernel.dmesg_restrict -> r:kernel.dmesg_restrict\s*=\s*1'
@@ -449,6 +481,7 @@ checks:
     compliance:
       - ens: "op.exp.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.7"
     condition: any
     rules:
       - 'c:rpm -q clamav -> r:^clamav-'
@@ -465,6 +498,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: any
     rules:
       - 'c:rpm -q audit -> r:^audit-'
@@ -478,6 +512,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'c:systemctl is-active auditd -> r:^active'
@@ -490,6 +525,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'f:$audit_conf -> r:^\s*max_log_file\s*=\s*[1-9]'
@@ -502,6 +538,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Medio"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'f:$audit_conf -> r:^\s*max_log_file_action\s*=\s*keep_logs'
@@ -514,6 +551,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'c:auditctl -l -> r:-w /var/log/lastlog -p wa'
@@ -526,6 +564,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Medio"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'c:auditctl -l -> r:-w /usr/bin/sudo'
@@ -538,6 +577,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: any
     rules:
       - 'c:systemctl is-active chronyd -> r:^active'
@@ -554,6 +594,7 @@ checks:
     compliance:
       - ens: "op.exp.10"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: any
     rules:
       - 'c:systemctl is-active rsyslog -> r:^active'
@@ -567,6 +608,7 @@ checks:
     compliance:
       - ens: "op.exp.10"
       - ens_nivel: "Medio"
+      - iso_27001: "8.15"
     condition: any
     rules:
       - 'f:/etc/rsyslog.conf -> r:^\s*\*\.\*\s+@@'
@@ -584,6 +626,7 @@ checks:
     compliance:
       - ens: "op.mon.1"
       - ens_nivel: "Básico"
+      - iso_27001: "8.16"
     condition: all
     rules:
       - 'c:systemctl is-active wazuh-agent -> r:^active'
@@ -596,6 +639,7 @@ checks:
     compliance:
       - ens: "op.mon.1"
       - ens_nivel: "Básico"
+      - iso_27001: "8.16"
     condition: any
     rules:
       - 'c:ufw status -> r:Status: active'
@@ -615,6 +659,7 @@ checks:
     compliance:
       - ens: "mp.com.2"
       - ens_nivel: "Medio"
+      - iso_27001: "8.24"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*Ciphers\s+'
@@ -627,6 +672,7 @@ checks:
     compliance:
       - ens: "mp.com.2"
       - ens_nivel: "Medio"
+      - iso_27001: "8.24"
     condition: all
     rules:
       - 'f:$sshd_config -> r:^\s*MACs\s+'
@@ -639,6 +685,7 @@ checks:
     compliance:
       - ens: "mp.com.3"
       - ens_nivel: "Básico"
+      - iso_27001: "8.24"
     condition: any
     rules:
       - 'f:/etc/yum.conf -> r:^\s*gpgcheck\s*=\s*1'
@@ -652,6 +699,7 @@ checks:
     compliance:
       - ens: "mp.s.3"
       - ens_nivel: "Básico"
+      - iso_27001: "8.6"
     condition: all
     rules:
       - 'c:sysctl net.ipv4.tcp_syncookies -> r:net.ipv4.tcp_syncookies\s*=\s*1'
@@ -664,6 +712,7 @@ checks:
     compliance:
       - ens: "mp.com.4"
       - ens_nivel: "Básico"
+      - iso_27001: "8.22"
     condition: all
     rules:
       - 'c:sysctl net.ipv4.conf.all.accept_redirects -> r:net.ipv4.conf.all.accept_redirects\s*=\s*0'
@@ -676,6 +725,7 @@ checks:
     compliance:
       - ens: "mp.com.4"
       - ens_nivel: "Básico"
+      - iso_27001: "8.22"
     condition: all
     rules:
       - 'c:sysctl net.ipv6.conf.all.accept_ra -> r:net.ipv6.conf.all.accept_ra\s*=\s*0'
@@ -688,6 +738,7 @@ checks:
     compliance:
       - ens: "mp.com.4"
       - ens_nivel: "Básico"
+      - iso_27001: "8.22"
     condition: all
     rules:
       - 'c:sysctl net.ipv4.conf.all.rp_filter -> r:net.ipv4.conf.all.rp_filter\s*=\s*1'
@@ -700,6 +751,7 @@ checks:
     compliance:
       - ens: "mp.com.4"
       - ens_nivel: "Básico"
+      - iso_27001: "8.22"
     condition: all
     rules:
       - 'c:sysctl net.ipv4.icmp_echo_ignore_broadcasts -> r:net.ipv4.icmp_echo_ignore_broadcasts\s*=\s*1'
@@ -712,6 +764,7 @@ checks:
     compliance:
       - ens: "mp.com.4"
       - ens_nivel: "Básico"
+      - iso_27001: "8.22"
     condition: all
     rules:
       - 'c:sysctl net.ipv4.conf.all.log_martians -> r:net.ipv4.conf.all.log_martians\s*=\s*1'
@@ -728,6 +781,7 @@ checks:
     compliance:
       - ens: "mp.eq.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.1"
     condition: any
     rules:
       - 'f:/etc/profile -> r:^\s*TMOUT\s*='
@@ -745,6 +799,7 @@ checks:
     compliance:
       - ens: "mp.info.3"
       - ens_nivel: "Medio"
+      - iso_27001: "8.24"
     condition: any
     rules:
       - 'c:lsblk -o TYPE -> r:crypt'
@@ -758,6 +813,7 @@ checks:
     compliance:
       - ens: "mp.info.9"
       - ens_nivel: "Básico"
+      - iso_27001: "8.13"
     condition: any
     rules:
       - 'c:rpm -q rsync -> r:^rsync-'
@@ -775,6 +831,7 @@ checks:
     compliance:
       - ens: "mp.s.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.26"
     condition: none
     rules:
       - 'c:rpm -q telnet -> r:^telnet-'
@@ -788,6 +845,7 @@ checks:
     compliance:
       - ens: "mp.s.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.26"
     condition: none
     rules:
       - 'c:dpkg -s rsh-client -> r:Status: install ok installed'
@@ -801,6 +859,7 @@ checks:
     compliance:
       - ens: "mp.s.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.26"
     condition: none
     rules:
       - 'c:rpm -q vsftpd -> r:^vsftpd-'
@@ -820,6 +879,7 @@ checks:
     compliance:
       - ens: "mp.sw.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.29"
     condition: any
     rules:
       - 'c:systemctl is-active unattended-upgrades -> r:^active'

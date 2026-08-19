@@ -29,6 +29,7 @@ checks:
     compliance:
       - ens: "op.acc.2"
       - ens_nivel: "Básico"
+      - iso_27001: "5.15"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> MinimumPasswordLength -> r:^(1[2-9]|[2-9][0-9]|[0-9][0-9][0-9][0-9]*)'
@@ -41,6 +42,7 @@ checks:
     compliance:
       - ens: "op.acc.2"
       - ens_nivel: "Básico"
+      - iso_27001: "5.15"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> MaximumPasswordAge -> r:^([0-9]|[1-8][0-9]|90)$'
@@ -55,6 +57,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -> LockoutBadCount -> r:^[0-5]$'
@@ -67,6 +70,7 @@ checks:
     compliance:
       - ens: "op.mon.1"
       - ens_nivel: "Básico"
+      - iso_27001: "8.16"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\DomainProfile -> EnableFirewall -> 1'
@@ -83,6 +87,7 @@ checks:
     compliance:
       - ens: "op.exp.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.7"
     condition: all
     rules:
       - 'r:HKLM\SOFTWARE\Microsoft\Windows Defender -> DisableAntiSpyware -> 0'
@@ -95,6 +100,7 @@ checks:
     compliance:
       - ens: "op.exp.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.7"
     condition: all
     rules:
       - 'r:HKLM\SOFTWARE\Microsoft\Windows Defender\Real-Time Protection -> DisableRealtimeMonitoring -> 0'
@@ -109,6 +115,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Services\EventLog\Security -> Start -> r:^[0-2]$'
@@ -123,6 +130,7 @@ checks:
     compliance:
       - ens: "mp.eq.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.1"
     condition: all
     rules:
       - 'r:HKCU\Control Panel\Desktop -> ScreenSaveTimeOut -> r:^([0-9]|[1-9][0-9]|[1-8][0-9][0-9]|900)$'
@@ -137,6 +145,7 @@ checks:
     compliance:
       - ens: "mp.sw.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.29"
     condition: all
     rules:
       - 'r:HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update -> AUOptions -> r:^[3-9]$|^[1-9][0-9]+'
@@ -151,6 +160,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp -> UserAuthentication -> 1'
@@ -163,6 +173,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Básico"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\WDigest -> UseLogonCredential -> 0'
@@ -177,6 +188,7 @@ checks:
     compliance:
       - ens: "op.acc.3"
       - ens_nivel: "Básico"
+      - iso_27001: "5.3"
     condition: all
     rules:
       - 'r:HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System -> ConsentPromptBehaviorAdmin -> r:^[1-2]$'
@@ -191,6 +203,7 @@ checks:
     compliance:
       - ens: "op.exp.2"
       - ens_nivel: "Básico"
+      - iso_27001: "8.9"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters -> SMB1 -> 0'
@@ -205,6 +218,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'r:HKLM\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging -> EnableScriptBlockLogging -> 1'
@@ -217,6 +231,7 @@ checks:
     compliance:
       - ens: "op.exp.8"
       - ens_nivel: "Básico"
+      - iso_27001: "8.15"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Services\W32Time\Parameters -> Type -> r:^(NTP|NT5DS|AllSync)$'
@@ -231,6 +246,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Medio"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Control\Lsa -> RunAsPPL -> 1'
@@ -243,6 +259,7 @@ checks:
     compliance:
       - ens: "op.acc.6"
       - ens_nivel: "Medio"
+      - iso_27001: "8.5"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard -> EnableVirtualizationBasedSecurity -> 1'
@@ -257,6 +274,7 @@ checks:
     compliance:
       - ens: "mp.com.2"
       - ens_nivel: "Medio"
+      - iso_27001: "8.24"
     condition: all
     rules:
       - 'r:HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp -> MinEncryptionLevel -> r:^[3-4]$'
