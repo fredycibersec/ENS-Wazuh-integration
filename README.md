@@ -493,6 +493,14 @@ Areas where help is especially needed:
 
 ---
 
+## Security
+
+Found a vulnerability (credential handling, a check/rule that could report
+false compliance, etc.)? See [SECURITY.md](SECURITY.md) — please don't open
+a public issue for it.
+
+---
+
 ## License
 
 This project is licensed under the **GNU General Public License v2.0** — see [LICENSE](LICENSE) for details.

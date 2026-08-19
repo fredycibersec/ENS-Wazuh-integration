@@ -191,6 +191,12 @@ PRs that fail the SCA validator or that are missing compliance tags will be aske
 
 ---
 
+## Security
+
+Please do not open a public issue for a security vulnerability (credential
+handling, a check/rule that could report false compliance, etc.) — see
+[SECURITY.md](SECURITY.md).
+
 ## Questions
 
 Open a [GitHub Discussion](https://github.com/fredycibersec/ENS-Wazuh-integration/discussions) for questions that are not bug reports or feature requests.
